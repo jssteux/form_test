@@ -11,7 +11,7 @@ workflows:
         distribution_type: app_store
         bundle_identifier: io.codemagic.flutteryaml
       vars:
-        APP_ID: 1111111111 # <-- Put your APP ID here
+        APP_ID: 6449093609 # <-- Put your APP ID here
       flutter: stable
       xcode: latest
       cocoapods: default
