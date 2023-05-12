@@ -36,7 +36,7 @@ class ImageWidgetState extends State<ImageWidget> {
       final imageTemp = File(image.path);
       setState(() => this.image = imageTemp);
     } on PlatformException catch(e) {
-      print('Failed to pick image: $e');
+      e;//print('Failed to pick image: $e');
     }
   }
 
