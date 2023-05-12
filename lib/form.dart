@@ -22,13 +22,13 @@ class MyCustomFormState extends State<MyCustomForm> {
   // Note: This is a `GlobalKey<FormState>`,
   // not a GlobalKey<MyCustomFormState>.
   final _formKey = GlobalKey<FormState>();
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   _row(int index) {
     return Row(
       children: [
         Text('ID: $index'),
-        SizedBox(width: 30),
+        const SizedBox(width: 30),
         Expanded(
           child: _comp(index),
         ),
@@ -58,7 +58,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
           });
     } else {
-      return ImageWidget();
+      return const ImageWidget();
     }
   }
 
@@ -74,13 +74,13 @@ class MyCustomFormState extends State<MyCustomForm> {
               // default false
               isAlwaysShown: true,
               // default false
-              scrollbarFadeDuration: Duration(milliseconds: 500),
+              scrollbarFadeDuration: const Duration(milliseconds: 500),
               // default : Duration(milliseconds: 300)
-              scrollbarTimeToFade: Duration(milliseconds: 800),
+              scrollbarTimeToFade: const Duration(milliseconds: 800),
               // default : Duration(milliseconds: 600)
               style: VsScrollbarStyle(
                 hoverThickness: 10.0, // default 12.0
-                radius: Radius.circular(10), // default Radius.circular(8.0)
+                radius: const Radius.circular(10), // default Radius.circular(8.0)
                 thickness: 10.0, // [ default 8.0 ]
                 color: Colors.purple.shade900, // default ColorScheme Theme
               ),
@@ -90,8 +90,8 @@ class MyCustomFormState extends State<MyCustomForm> {
                 shrinkWrap: true,
                 itemCount: 5,
                 scrollDirection: Axis.vertical,
-                padding: EdgeInsets.all(16.0),
-                physics: BouncingScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
+                physics: const BouncingScrollPhysics(),
                 itemBuilder: (context, index) {
                   return _row(index);
                 },
