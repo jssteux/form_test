@@ -7,9 +7,6 @@ workflows:
     integrations:
       app_store_connect: codemagic
     environment:
-      ios_signing:
-        distribution_type: development
-        bundle_identifier: "org.osivia.forms"
       vars:
         APP_ID: 6449093609 # <-- Put your APP ID here
       flutter: stable
