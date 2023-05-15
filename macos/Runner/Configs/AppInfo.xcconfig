@@ -8,7 +8,7 @@
 PRODUCT_NAME = form_test
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.formTest
+PRODUCT_BUNDLE_IDENTIFIER = org.osivia.forms.formTest
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2023 com.example. All rights reserved.
