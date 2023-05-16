@@ -137,7 +137,7 @@ packages:
     source: hosted
     version: "2.1.12"
   image_picker_ios:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: image_picker_ios
       sha256: a1546ff5861fc15812953d4733b520c3d371cec3d2859a001ff04c46c4d81883
