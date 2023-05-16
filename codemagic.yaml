@@ -13,7 +13,7 @@ workflows:
       xcode: latest
       cocoapods: default
       ios_signing:
-        distribution_type: development # or: ad_hoc | development | enterprise
+        distribution_type: app_store # or: ad_hoc | development | enterprise
         bundle_identifier: org.osivia.forms
     scripts:
       - name: Set up code signing settings on Xcode project
