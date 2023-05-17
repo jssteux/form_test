@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
 
+import 'image_widget.dart';
+
 
 
 // Define a custom Form widget.
@@ -77,7 +79,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
           });
     } else {
-      return const TextField();
+      return const ImageWidget();
     }
   }
 
