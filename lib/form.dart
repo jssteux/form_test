@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
 
 
@@ -23,6 +24,8 @@ class MyCustomFormState extends State<MyCustomForm> {
   // not a GlobalKey<MyCustomFormState>.
   final _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
+
+  TextEditingController dateInputController = TextEditingController();
 
   _row(int index) {
     return Row(
@@ -49,6 +52,7 @@ class MyCustomFormState extends State<MyCustomForm> {
       );
     } else if (index == 1) {
       return TextField(
+          controller: dateInputController,
           decoration: const InputDecoration(
               icon: Icon(Icons.calendar_today), //icon of text field
               labelText: "Enter Date" //label text of field
@@ -63,6 +67,13 @@ class MyCustomFormState extends State<MyCustomForm> {
                 firstDate: DateTime(2000),
                 //DateTime.now() - not to allow to choose before today.
                 lastDate: DateTime(2102));
+
+            if(pickedDate != null ){
+              String formattedDate = DateFormat('yyyy-MM-dd').format(pickedDate);
+              //you can implement different kind of Date Format here according to your requirement
+
+              dateInputController.text = formattedDate;
+            }
 
           });
     } else {
