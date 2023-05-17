@@ -1,1 +1,1 @@
-#import "PluginRegistrant.h"
+#import "GeneratedPluginRegistrant.h"
