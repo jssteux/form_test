@@ -4,14 +4,14 @@
 
 // clang-format off
 
-#ifndef GeneratedPluginRegistrant_h
-#define GeneratedPluginRegistrant_h
+#ifndef PluginRegistrant_h
+#define PluginRegistrant_h
 
 #import <Flutter/Flutter.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface GeneratedPluginRegistrant : NSObject
+@interface PluginRegistrant : NSObject
 + (void)registerWithRegistry:(NSObject<FlutterPluginRegistry>*)registry;
 @end
 
