@@ -1,1 +1,5 @@
+@implementation GeneratedPluginRegistrant
 
+
+
+@end
