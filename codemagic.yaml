@@ -22,6 +22,9 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
+      - name: Modify pods
+        script: |
+          find . -name "Podfile" -execdir sed -i "1s/^/platform :ios, '12.0'/" Podfile \;
       - name: Install pods
         script: |
           find . -name "Podfile" -execdir pod install \;
