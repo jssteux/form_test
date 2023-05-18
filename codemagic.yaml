@@ -25,9 +25,6 @@ workflows:
       - name: Modify pods
         script: |
           find . -name "Podfile" -execdir sed -i "1s/^/platform :ios, '12.0'/" Podfile \;
-      - name: View pods
-        script: |
-          find . -name "Podfile" -execdir ls \;
       - name: Install pods
         script: |
           find . -name "Podfile" -execdir pod install \;
@@ -38,6 +35,9 @@ workflows:
         script: |
           flutter test
         ignore_failure: true
+      - name: View pods
+        script: |
+          find . -name "Podfile" -execdir ls \;
       - name: Flutter build ipa and automatic versioning
         script: |
           flutter build ipa --release \
