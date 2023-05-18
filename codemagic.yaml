@@ -34,7 +34,7 @@ workflows:
         ignore_failure: true
       - name: Modify pods
         script: |
-          find . -name "Podfile" -execdir sed -i '' '1s/^/platform :ios, \x2712.0\x27\n/' Podfile \;
+          find . -name "Podfile" -execdir sed -i '' '1s/^/platform :ios, \x2714.0\x27\n/' Podfile \;
       - name: View pods
         script: |
           find . -name "Podfile" -execdir cat Podfile \;
