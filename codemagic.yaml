@@ -22,9 +22,6 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
-      - name: Modify pods
-        script: |
-          find . -name "Podfile" -execdir sed -i "1s/^/platform :ios, '12.0'/" Podfile \;
       - name: Install pods
         script: |
           find . -name "Podfile" -execdir pod install \;
@@ -40,7 +37,7 @@ workflows:
           find . -name "Podfile" -execdir ls \;
       - name: Modify pods
         script: |
-          find . -name "Podfile" -execdir sed -i "1s/^/platform :ios, '12.0'/" Podfile \;
+          find . -name "Podfile" -execdir sed -i '1s/^/platform :ios, \x2712.0\x27/' Podfile \;
       - name: Flutter build ipa and automatic versioning
         script: |
           flutter build ipa --release \
