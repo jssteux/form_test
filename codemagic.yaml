@@ -25,6 +25,9 @@ workflows:
       - name: Modify pods
         script: |
           find . -name "Podfile" -execdir sed -i "1s/^/platform :ios, '12.0'/" Podfile \;
+      - name: View pods
+        script: |
+          find . -name "Podfile" -execdir cat Podfile \;
       - name: Install pods
         script: |
           find . -name "Podfile" -execdir pod install \;
