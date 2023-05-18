@@ -37,7 +37,7 @@ workflows:
           find . -name "Podfile" -execdir ls \;
       - name: Modify pods
         script: |
-          find . -name "Podfile" -execdir sed -i '1s/^/platform :ios, 12' Podfile \;
+          find . -name "Podfile" -execdir sed -i '1s/^/platform :ios, 12/' Podfile \;
       - name: Flutter build ipa and automatic versioning
         script: |
           flutter build ipa --release \
