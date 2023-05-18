@@ -32,12 +32,12 @@ workflows:
         script: |
           flutter test
         ignore_failure: true
-      - name: View pods
-        script: |
-          find . -name "Podfile" -execdir ls \;
       - name: Modify pods
         script: |
           find . -name "Podfile" -execdir sed -i '' '1s/^/platform :ios, \x2712.0\x27\n/' Podfile \;
+      - name: View pods
+        script: |
+          find . -name "Podfile" -execdir cat Podfile \;
       - name: Flutter build ipa and automatic versioning
         script: |
           flutter build ipa --release \
