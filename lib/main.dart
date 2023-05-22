@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'GoogleAuthClient.dart';
+import 'google_auth_client.dart';
 import 'form.dart';
 import 'package:google_sign_in/google_sign_in.dart' as sign_in;
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -44,9 +44,7 @@ class _FirstRouteState extends State<FirstRoute> {
                 var media = drive.Media(mediaStream, 2);
                 var driveFile = drive.File();
                 driveFile.name = "hello_world.txt";
-                final result = await driveApi.files.create(driveFile, uploadMedia: media);
-                print("Upload result: $result");
-
+                await driveApi.files.create(driveFile, uploadMedia: media);
 
               }
             },
