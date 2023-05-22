@@ -11,9 +11,7 @@ project 'Runner', {
   'Release' => :release,
 }
 
-pod 'Firebase', :modular_headers => true
-pod 'FirebaseCore', :modular_headers => true
-pod 'GoogleUtilities', :modular_headers => true
+
 
 def flutter_root
   generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
