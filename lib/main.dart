@@ -39,12 +39,44 @@ class _FirstRouteState extends State<FirstRoute> {
                 final driveApi = drive.DriveApi(authenticateClient);
 
 
-                final Stream<List<int>> mediaStream =
-                Future.value([104, 105]).asStream().asBroadcastStream();
-                var media = drive.Media(mediaStream, 2);
-                var driveFile = drive.File();
-                driveFile.name = "hello_world.txt";
-                await driveApi.files.create(driveFile, uploadMedia: media);
+                drive.Drive? current;
+
+                var drives = await driveApi.drives.list();
+                if( drives.drives != null) {
+                  var items = drives.drives;
+                  if( items != null)  {
+                  for (var item in items) {
+                    if(item.name == "Forms")  {
+                      current = item;
+                    }
+                  }
+                  }
+                }
+
+                if( current != null) {
+                  /*
+                  final Stream<List<int>> mediaStream =
+                  Future.value([104, 105]).asStream().asBroadcastStream();
+                  var media = drive.Media(mediaStream, 2);
+                  var driveFile = drive.File();
+                  driveFile.name = "hello_world.txt";
+                  await driveApi.files.create(driveFile, uploadMedia: media);
+                  */
+
+                  final Stream<List<int>> mediaStream =
+                  Future.value([104, 105]).asStream().asBroadcastStream();
+                  var media = drive.Media(mediaStream, 2);
+                  var driveFile = drive.File();
+                  driveFile.name = "hello_world.txt";
+                  final parents = [];
+
+                    String? id = current.id!;
+                    driveFile.parents = [id] ;
+                    await driveApi.files.create(supportsAllDrives: true, driveFile, uploadMedia: media);
+                    }
+
+
+
 
               }
             },
