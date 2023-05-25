@@ -1,14 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:form_test/form_store.dart';
 import 'package:intl/intl.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
-
+import 'package:google_sign_in/google_sign_in.dart' as sign_in;
+import 'custom_image_widget.dart';
 import 'image_widget.dart';
 
 
 
 // Define a custom Form widget.
 class MyCustomForm extends StatefulWidget {
-  const MyCustomForm({super.key});
+  const MyCustomForm( sign_in.GoogleSignInAccount this.account,{super.key}) ;
+  final sign_in.GoogleSignInAccount? account;
+
 
   @override
   MyCustomFormState createState() {
@@ -24,7 +30,12 @@ class MyCustomFormState extends State<MyCustomForm> {
   //
   // Note: This is a `GlobalKey<FormState>`,
   // not a GlobalKey<MyCustomFormState>.
+
+
+
   final _formKey = GlobalKey<FormState>();
+  Map files = {};
+
   final ScrollController _scrollController = ScrollController();
 
   TextEditingController dateInputController = TextEditingController();
@@ -78,9 +89,27 @@ class MyCustomFormState extends State<MyCustomForm> {
             }
 
           });
-    } else {
-      return const ImageWidget();
     }
+
+    else {
+      return CustomImageFormField (
+          (value) => {files[index] = value },
+          files[ index]
+
+      );
+
+    }
+
+
+
+  }
+
+  List<Widget> buildWidgets() {
+    List<Widget> widgets = [];
+    for(int i=0; i<20;i++){
+      widgets.add(_comp(i));
+    }
+    return widgets;
   }
 
   @override
@@ -101,21 +130,18 @@ class MyCustomFormState extends State<MyCustomForm> {
               // default : Duration(milliseconds: 600)
               style: VsScrollbarStyle(
                 hoverThickness: 10.0, // default 12.0
-                radius: const Radius.circular(10), // default Radius.circular(8.0)
+                radius: const Radius.circular(12), // default Radius.circular(8.0)
                 thickness: 10.0, // [ default 8.0 ]
                 color: Colors.purple.shade900, // default ColorScheme Theme
               ),
 
-              child: ListView.builder(
+              child: SingleChildScrollView(
                 controller: _scrollController,
-                shrinkWrap: true,
-                itemCount: 5,
-                scrollDirection: Axis.vertical,
-                padding: const EdgeInsets.all(16.0),
-                physics: const BouncingScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return _row(index);
-                },
+
+                child:  Column(
+                    children: buildWidgets(),
+
+              ),
               ),
             ),
             bottomNavigationBar:
@@ -129,7 +155,16 @@ class MyCustomFormState extends State<MyCustomForm> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Processing Data')),
                     );
+
+                    _formKey.currentState!.save();
+                    FormStore store = FormStore(widget.account!);
+
+                    files.forEach((key, file) { store.save(file);});
+
+
                   }
+
+
                 },
                 child: const Text('Submit2'),
               )

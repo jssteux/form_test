@@ -32,10 +32,12 @@ class _FirstRouteState extends State<FirstRoute> {
             child: const Text('Auth'),
             onPressed: () async {
               final googleSignIn = sign_in.GoogleSignIn.standard(scopes: [drive.DriveApi.driveScope]);
-              final account = await googleSignIn.signIn();
+              account = await googleSignIn.signIn();
               if( account != null) {
-                final authHeaders = await account.authHeaders;
+                final authHeaders = await account!.authHeaders;
                 final authenticateClient = GoogleAuthClient(authHeaders);
+
+                /*
                 final driveApi = drive.DriveApi(authenticateClient);
 
 
@@ -54,27 +56,18 @@ class _FirstRouteState extends State<FirstRoute> {
                 }
 
                 if( current != null) {
-                  /*
-                  final Stream<List<int>> mediaStream =
-                  Future.value([104, 105]).asStream().asBroadcastStream();
-                  var media = drive.Media(mediaStream, 2);
-                  var driveFile = drive.File();
-                  driveFile.name = "hello_world.txt";
-                  await driveApi.files.create(driveFile, uploadMedia: media);
-                  */
 
                   final Stream<List<int>> mediaStream =
                   Future.value([104, 105]).asStream().asBroadcastStream();
                   var media = drive.Media(mediaStream, 2);
                   var driveFile = drive.File();
                   driveFile.name = "hello_world.txt";
-                  final parents = [];
 
                     String? id = current.id!;
                     driveFile.parents = [id] ;
                     await driveApi.files.create(supportsAllDrives: true, driveFile, uploadMedia: media);
                     }
-
+*/
 
 
 
@@ -87,7 +80,7 @@ class _FirstRouteState extends State<FirstRoute> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const SecondRoute()),
+              MaterialPageRoute(builder: (context) => SecondRoute(account!)),
             );
           },
         )]
@@ -98,7 +91,9 @@ class _FirstRouteState extends State<FirstRoute> {
 }
 
 class SecondRoute extends StatelessWidget {
-  const SecondRoute({super.key});
+  final sign_in.GoogleSignInAccount? account;
+
+   const SecondRoute(  sign_in.GoogleSignInAccount this.account, {super.key });
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +106,7 @@ class SecondRoute extends StatelessWidget {
           onPressed: () {
             Navigator.pop(context);
           },
-          child: const MyCustomForm()
+          child:  MyCustomForm( account!)
         ),
       ),
     );

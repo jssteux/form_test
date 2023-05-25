@@ -16,6 +16,8 @@ class ImageWidget extends StatefulWidget {
   ImageWidgetState createState() {
     return ImageWidgetState();
   }
+
+
 }
 
 // Define a corresponding State class.
@@ -29,6 +31,7 @@ class ImageWidgetState extends State<ImageWidget> {
   final _formKey = GlobalKey<ImageWidgetState>();
 
   File? image;
+
   Future pickImage() async {
     try {
       final image = await ImagePicker().pickImage(source: ImageSource.gallery);
