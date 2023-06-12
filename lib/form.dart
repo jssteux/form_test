@@ -1,11 +1,13 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:form_test/form_store.dart';
 import 'package:intl/intl.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
 import 'package:google_sign_in/google_sign_in.dart' as sign_in;
 import 'custom_image_widget.dart';
+import 'custom_image_widget_web.dart';
 import 'image_widget.dart';
 
 
@@ -62,6 +64,7 @@ class MyCustomFormState extends State<MyCustomForm> {
           }
           return null;
         },
+
       );
     } else if (index == 1) {
       return TextField(
@@ -92,11 +95,16 @@ class MyCustomFormState extends State<MyCustomForm> {
     }
 
     else {
-      return CustomImageFormField (
+      if( kIsWeb) {
+      return CustomImageFormFieldWeb (
           (value) => {files[index] = value },
           files[ index]
-
-      );
+      );} else  {
+        return CustomImageFormField (
+                (value) => {files[index] = value },
+            files[ index]
+        );
+      }
 
     }
 
@@ -106,7 +114,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
   List<Widget> buildWidgets() {
     List<Widget> widgets = [];
-    for(int i=0; i<20;i++){
+    for(int i=0; i<5;i++){
       widgets.add(_comp(i));
     }
     return widgets;
@@ -159,7 +167,13 @@ class MyCustomFormState extends State<MyCustomForm> {
                     _formKey.currentState!.save();
                     FormStore store = FormStore(widget.account!);
 
-                    files.forEach((key, file) { store.save(file);});
+                    files.forEach((key, file) { if( file is Uint8List) {
+                      store.saveImage(file);
+                    } else {
+                      store.save(file);
+                    }
+                    }
+                    );
 
 
                   }

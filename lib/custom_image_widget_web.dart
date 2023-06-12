@@ -1,13 +1,14 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 
-class CustomImageFormField extends FormField<File?> {
+class CustomImageFormFieldWeb extends FormField<Uint8List?> {
 
-  CustomImageFormField(FormFieldSetter<File> onSaved,
-      File? initialValue, {super.key}) : super(
+  CustomImageFormFieldWeb(FormFieldSetter<Uint8List> onSaved,
+      Uint8List? initialValue, {super.key}) : super(
       onSaved: onSaved,
       initialValue: initialValue,
       builder: (formFieldState) {
@@ -28,7 +29,8 @@ class CustomImageFormField extends FormField<File?> {
                       .pickFiles(type: FileType.image, allowMultiple: false);
                   if (file != null) {
                     File? pickedFile = File(file.files.first.name!);
-                    formFieldState.didChange(pickedFile);
+                    Uint8List bytes = file.files.first.bytes!;
+                    formFieldState.didChange(bytes);
                   }
                 },
               ),
@@ -36,10 +38,11 @@ class CustomImageFormField extends FormField<File?> {
         );
 
         if (formFieldState.value != null) {
-          c.children.add(Image.file(formFieldState.value!));
+          c.children.add(Image.memory(formFieldState.value!));
+          print('refresh');
         }
 
-        print('refresh');
+
         return c;
       });
 }
