@@ -175,7 +175,7 @@ class MyCustomFormState extends State<MyCustomForm> {
                     }
                     );
 
-
+                    store.saveData();
                   }
 
 

@@ -28,7 +28,8 @@ void main() {
 const List<String> scopes = <String>[
   'email',
   'https://www.googleapis.com/auth/contacts.readonly',
-  drive.DriveApi.driveScope
+  drive.DriveApi.driveScope,
+  'https://www.googleapis.com/auth/spreadsheets'
 ];
 
 GoogleSignIn _googleSignIn = GoogleSignIn(
