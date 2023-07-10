@@ -45,7 +45,7 @@ dependencies:
   google_identity_services_web: ^0.2.1
   google_sign_in_web: ^0.12.0+2
   google_sign_in_platform_interface: ^2.4.0
-
+  googleapis_auth: ^1.4.1
 
 dev_dependencies:
   flutter_test:
