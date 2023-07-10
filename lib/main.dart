@@ -7,7 +7,7 @@ import 'package:googleapis/drive/v3.dart' as drive;
 import 'dart:convert' show json;
 import 'package:http/http.dart' as http;
 import 'src/sign_in_button.dart';
-
+import 'package:ensemble_ts_interpreter/parser/newjs_interpreter.dart';
 
 
 /// The type of the onClick callback for the (mobile) Sign In Button.
@@ -15,6 +15,7 @@ typedef HandleSignInFn = Future<void> Function();
 
 
 void main() {
+
   runApp(const MaterialApp(
     title: 'Navigation Basics',
     home: FirstRoute(),
@@ -22,6 +23,22 @@ void main() {
 }
 
 
+
+
+
+test()  {
+Map<String, dynamic> context = {
+  'age': 9,
+};
+
+String code = """
+      age = age + 1;
+    """;
+
+JSInterpreter.fromCode(code, context).evaluate();
+print ("calcul age");
+print (context['age']);
+}
 
 
 /// The scopes required by this application.
@@ -111,10 +128,11 @@ class _FirstRouteState extends State<FirstRoute> {
     json.decode(response.body) as Map<String, dynamic>;
     final String? namedContact = _pickFirstNamedContact(data);
     setState(() {
+
       if (namedContact != null) {
         _contactText = 'I see you know $namedContact!';
       } else {
-        _contactText = 'No contacts to display.';
+        _contactText = 'No contacts to display';
       }
     });
   }
