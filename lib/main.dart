@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:form_test/list.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'form_store.dart';
 import 'google_auth_client.dart';
 import 'form.dart';
 import 'package:flutter/foundation.dart';
@@ -70,6 +72,7 @@ class FirstRoute extends StatefulWidget {
 
 class _FirstRouteState extends State<FirstRoute> {
   GoogleSignInAccount? _account;
+  late FormStore store;
   String _contactText = '';
   bool _isAuthorized = false; // has granted permissions?
 
@@ -94,7 +97,7 @@ class _FirstRouteState extends State<FirstRoute> {
       // Now that we know that the user can access the required scopes, the app
       // can call the REST API.
       if (isAuthorized) {
-        _handleGetContact(account!);
+        store = FormStore(account!);
       }
     });
 
@@ -105,60 +108,6 @@ class _FirstRouteState extends State<FirstRoute> {
     // sign-in rates" ([docs](https://developers.google.com/identity/gsi/web/guides/display-button#html)).
     _googleSignIn.signInSilently();
   }
-
-  // Calls the People API REST endpoint for the signed-in user to retrieve information.
-  Future<void> _handleGetContact(GoogleSignInAccount user) async {
-    setState(() {
-      _contactText = 'Loading contact info...';
-    });
-    final http.Response response = await http.get(
-      Uri.parse('https://people.googleapis.com/v1/people/me/connections'
-          '?requestMask.includeField=person.names'),
-      headers: await user.authHeaders,
-    );
-    if (response.statusCode != 200) {
-      setState(() {
-        _contactText = 'People API gave a ${response.statusCode} '
-            'response. Check logs for details.';
-      });
-      print('People API ${response.statusCode} response: ${response.body}');
-      return;
-    }
-    final Map<String, dynamic> data =
-    json.decode(response.body) as Map<String, dynamic>;
-    final String? namedContact = _pickFirstNamedContact(data);
-    setState(() {
-
-      if (namedContact != null) {
-        _contactText = 'I see you know $namedContact!';
-      } else {
-        _contactText = 'No contacts to display';
-      }
-    });
-  }
-
-  String? _pickFirstNamedContact(Map<String, dynamic> data) {
-    final List<dynamic>? connections = data['connections'] as List<dynamic>?;
-    final Map<String, dynamic>? contact = connections?.firstWhere(
-          (dynamic contact) => (contact as Map<Object?, dynamic>)['names'] != null,
-      orElse: () => null,
-    ) as Map<String, dynamic>?;
-    if (contact != null) {
-      final List<dynamic> names = contact['names'] as List<dynamic>;
-      final Map<String, dynamic>? name = names.firstWhere(
-            (dynamic name) =>
-        (name as Map<Object?, dynamic>)['displayName'] != null,
-        orElse: () => null,
-      ) as Map<String, dynamic>?;
-      if (name != null) {
-        return name['displayName'] as String?;
-      }
-    }
-    return null;
-  }
-
-
-
 
 
 
@@ -188,7 +137,7 @@ class _FirstRouteState extends State<FirstRoute> {
       _isAuthorized = isAuthorized;
     });
     if (isAuthorized) {
-      _handleGetContact(_account!);
+      store = FormStore(_account!);
     }
   }
 
@@ -210,18 +159,20 @@ class _FirstRouteState extends State<FirstRoute> {
           ),
           const Text('Signed in successfully.'),
           if (_isAuthorized) ...<Widget>[
-            // The user has Authorized all required scopes
-            Text(_contactText),
-            ElevatedButton(
-              child: const Text('REFRESH'),
-              onPressed: () => _handleGetContact(user),
-            ),
-            ElevatedButton(
+              ElevatedButton(
               child: const Text('Mon formulaire'),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => SecondRoute(_account!)),
+                  MaterialPageRoute(builder: (context) => FormRoute(_account!)),
+                );
+              },
+            ),ElevatedButton(
+              child: const Text('Liste'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ListRoute(store!)),
                 );
               },
             )
@@ -281,24 +232,40 @@ class _FirstRouteState extends State<FirstRoute> {
 
 }
 
-class SecondRoute extends StatelessWidget {
+class FormRoute extends StatelessWidget {
   final GoogleSignInAccount? account;
 
-   const SecondRoute(  GoogleSignInAccount this.account, {super.key });
+   const FormRoute(  GoogleSignInAccount this.account, {super.key });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Second Route'),
+        title: const Text('Formulaire saisie'),
       ),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
           child:  MyCustomForm( account!)
         ),
+
+    );
+  }
+}
+
+
+class ListRoute extends StatelessWidget {
+  final FormStore store;
+
+  const ListRoute(  this.store, {super.key });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Liste'),
+      ),
+      body: Center(
+            child:  MyCustomList( store!)
+
       ),
     );
   }

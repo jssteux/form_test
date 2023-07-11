@@ -120,29 +120,11 @@ class FormStore {
 
 
     //search main
-    drive.Drive? current = await getFolder(driveApi);
-    String? id = current!.id!;
-
-
-    drive.File? sheetFile;
-    var drives = await driveApi.files.list(corpora: 'drive', driveId: id, includeItemsFromAllDrives: true, supportsAllDrives: true);
-    if (drives.files != null) {
-      var items = drives.files;
-      if (items != null) {
-        for (var item in items) {
-          if (item.name == "main") {
-            if( item.mimeType == 'application/vnd.google-apps.spreadsheet') {
-                sheetFile = item;
-            }
-          }
-        }
-      }
-    }
-
+    String? sheetFileId = await getSheetFileId(driveApi);
 
 
     final encodedRange = Uri.encodeComponent("CLIENT!A1:D1");
-    final sheetFileId = sheetFile!.id;
+
 
     String uri;
     /*
@@ -166,8 +148,76 @@ class FormStore {
         },
       ),
     );
-    print(response.body.toString());
+    //print(response.body.toString());
 
+  }
+
+
+  Future<List<Map<String,String>>> loadData()  async {
+
+
+    final authHeaders = await account.authHeaders;
+
+    final authenticateClient = GoogleAuthClient(authHeaders);
+    final driveApi = drive.DriveApi(authenticateClient);
+
+    String? sheetFileId = await getSheetFileId(driveApi);
+
+    final encodedRange = Uri.encodeComponent("CLIENT!A1:E1000");
+
+    String uri = '$_sheetsEndpoint$sheetFileId/values/$encodedRange';
+
+    final response = await authenticateClient.get( Uri.parse(uri ));
+
+    final data = jsonDecode(response.body.toString());
+    final List<dynamic> rows = data['values'];
+    final List<dynamic> cellsName = rows[0];
+    final name = cellsName.elementAt(0);
+
+    List<Map<String,String>> res = [];
+    for(int i = 1; i< rows.length; i++) {
+      Map<String,String> rowMap = {};
+      List<dynamic> rowCells = rows.elementAt(i);
+      for(int j=0; j< cellsName.length; j++)  {
+        var value = "";
+        if( j < rowCells.length)  {
+          value =  rowCells.elementAt(j);
+        }
+        rowMap.putIfAbsent(cellsName.elementAt(j), () => value);
+      }
+
+      res.add(rowMap);
+    }
+
+    return res;
+    //return  [ Map.unmodifiable({'NOM':'Le rouzic'}), Map.unmodifiable({'NOM':'STEUX'}) ];
+  }
+
+
+
+  Future<String?> getSheetFileId(drive.DriveApi driveApi) async {
+
+    //search main
+    drive.Drive? current = await getFolder(driveApi);
+    String? id = current!.id!;
+
+
+    drive.File? sheetFile;
+    var drives = await driveApi.files.list(corpora: 'drive', driveId: id, includeItemsFromAllDrives: true, supportsAllDrives: true);
+    if (drives.files != null) {
+      var items = drives.files;
+      if (items != null) {
+        for (var item in items) {
+          if (item.name == "main") {
+            if( item.mimeType == 'application/vnd.google-apps.spreadsheet') {
+                sheetFile = item;
+            }
+          }
+        }
+      }
+    }
+    final sheetFileId = sheetFile!.id;
+    return sheetFileId;
   }
 
 
