@@ -14,7 +14,9 @@ const spreadsheetId = '1MBNPE_XOPGy-x_UjVOI81eKbFCQOVq-4vvuxhwnsQ1s';
 
 class FormStore {
   final sign_in.GoogleSignInAccount account;
-  const FormStore(this.account);
+   FormStore(this.account);
+   var updating = false;
+
 
   save(File? file) async {
     if (file == null) {
@@ -106,11 +108,11 @@ class FormStore {
 
 
 
-  saveData() async {
+  saveData(int index, Map<String, String> formValues) async {
 
     test();
 
-
+    updating = true;
     final authHeaders = await account.authHeaders;
 
     //final authenticateClient = GoogleAuthClient(authHeaders);
@@ -123,38 +125,97 @@ class FormStore {
     String? sheetFileId = await getSheetFileId(driveApi);
 
 
-    final encodedRange = Uri.encodeComponent("CLIENT!A1:D1");
+    String encodedRange = Uri.encodeComponent("CLIENT!A1:D1");
 
 
     String uri;
+    String range="";
     /*
     if( account.email == 'jssteux@gmail.com') {
      uri = '$_sheetsEndpoint$spreadsheetId/values/$encodedRange:append?valueInputOption=RAW';
     }
     else {
       */
-       uri = '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW';
+
+
+    if( index == -1) {
+      range="CLIENT!A1:D1";
+      encodedRange = Uri.encodeComponent(range);
+      uri =
+      '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW';
+
+
+
+      // Create new ID
+
+      List<Map<String,String>> datas = await loadDataInternal( false) ;
+      int key = 0;
+      for (int i = 0; i < datas.length; i++) {
+        String? s = datas.elementAt(i)["ID"];
+        if (s != null) {
+          try {
+            var b = int.parse(s);
+            if( b > key) {
+              key = b;
+            }
+          } on Exception catch (_) {
+
+          }
+        }
+      }
+
+
+      final response = await authenticateClient.post(
+        Uri.parse(uri ),
+        body: jsonEncode(
+          {
+            "range": range,
+            "majorDimension": "ROWS",
+            'values': [ [key.toString(),formValues["NOM"]]],
+          },
+        ),
+      );
+    } else  {
+      int indexInsertion = index+2;
+      range = "CLIENT!A$indexInsertion:D$indexInsertion";
+
+      encodedRange = Uri.encodeComponent(range);
+      uri =
+      '$_sheetsEndpoint$sheetFileId/values/$encodedRange?valueInputOption=RAW';
+      final response = await authenticateClient.put(
+        Uri.parse(uri ),
+        body: jsonEncode(
+          {
+            "range": range,
+            "majorDimension": "ROWS",
+            'values': [ [formValues["ID"],formValues["NOM"]]],
+          },
+        ),
+      );
+      print(response.body.toString());
+    }
   /*
   }
   */
+    updating = false;
 
-    final response = await authenticateClient.post(
-        Uri.parse(uri ),
-      body: jsonEncode(
-        {
-          "range": "CLIENT!A1:D1",
-          "majorDimension": "ROWS",
-          'values': [ ['4','TABANI']],
-        },
-      ),
-    );
     //print(response.body.toString());
 
   }
 
-
   Future<List<Map<String,String>>> loadData()  async {
+    return loadDataInternal( true);
+  }
 
+
+
+  Future<List<Map<String,String>>> loadDataInternal(bool wait)  async {
+
+    if( wait) {
+      while (updating == true) {
+        await Future.delayed(const Duration(seconds: 1));
+      }
+    }
 
     final authHeaders = await account.authHeaders;
 

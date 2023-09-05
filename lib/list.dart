@@ -1,21 +1,20 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:form_test/form_store.dart';
+import 'package:form_test/main.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
-import 'package:google_sign_in/google_sign_in.dart' as sign_in;
-
 
 // Define a custom Form widget.
 class MyCustomList extends StatefulWidget {
   const MyCustomList(this.store, {super.key});
+
   final FormStore store;
 
   @override
   MyCustomListState createState() {
     return MyCustomListState();
   }
+
+
 }
 
 // Define a corresponding State class.
@@ -24,23 +23,37 @@ class MyCustomListState extends State<MyCustomList> {
   final ScrollController _scrollController = ScrollController();
 
   late List<Map<String, String>> _items;
+  Key _refreshKey = UniqueKey();
+
 
   Widget _comp(int index) {
-    return ListTile(
-        title: Row(children: <Widget>[
+
+    var current = index;
+    return GestureDetector(
+        child: ListTile(
+            title: Row(children: <Widget>[
       Expanded(child: Text(_items.elementAt(index)['NOM']!)),
       Expanded(child: Text(_items.elementAt(index)['PRENOM']!)),
       Expanded(child: Text(_items.elementAt(index)['DATE_NAISSANCE']!)),
-    ]));
+    ])),
+    onTap: () {
+
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => FormRoute(widget.store!, current)),
+      ).then((value) =>
+            setState( (){ if(value == true) {
+              _refreshKey = UniqueKey();} })); }
+    );
 /*
       trailing: IconButton(
         icon: const Icon(Icons.delete),
         onPressed: () => setState(() {
           _items.removeAt(index);
         }),
-      ),
-    );
- */
+      );
+*/
   }
 
   List<Widget> buildWidgets() {
@@ -52,26 +65,32 @@ class MyCustomListState extends State<MyCustomList> {
     return widgets;
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     // Build a Form widget using the _formKey created above.
 
     return FutureBuilder<List<Map<String, String>>>(
+        key: _refreshKey,
         future: widget.store.loadData(),
         builder: (context, AsyncSnapshot<List<Map<String, String>>> snapshot) {
           if (snapshot.hasData) {
             _items = snapshot.data!;
             return Form(
                 child: Column(children: <Widget>[
-                  const ListTile(
-                      title:  Row(
-
-                          children: <Widget>[
-                            Expanded(child: Text("nom", style: TextStyle(fontWeight: FontWeight.bold))),
-                            Expanded(child: Text("prenom", style: TextStyle(fontWeight: FontWeight.bold))),
-                            Expanded(child: Text("date naissance", style: TextStyle(fontWeight: FontWeight.bold))),
-                          ]
-                      )),
+              const ListTile(
+                  title: Row(children: <Widget>[
+                Expanded(
+                    child: Text("nom",
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                Expanded(
+                    child: Text("prenom",
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                Expanded(
+                    child: Text("date naissance",
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+              ])),
               Expanded(
                   child: VsScrollbar(
                 controller: _scrollController,
@@ -84,10 +103,12 @@ class MyCustomListState extends State<MyCustomList> {
                 scrollbarTimeToFade: const Duration(milliseconds: 800),
                 // default : Duration(milliseconds: 600)
                 style: VsScrollbarStyle(
-                  hoverThickness: 10.0, // default 12.0
-                  radius:
-                      const Radius.circular(12), // default Radius.circular(8.0)
-                  thickness: 10.0, // [ default 8.0 ]
+                  hoverThickness: 10.0,
+                  // default 12.0
+                  radius: const Radius.circular(12),
+                  // default Radius.circular(8.0)
+                  thickness: 10.0,
+                  // [ default 8.0 ]
                   color: Colors.purple.shade900, // default ColorScheme Theme
                 ),
 

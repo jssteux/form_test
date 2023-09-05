@@ -164,7 +164,7 @@ class _FirstRouteState extends State<FirstRoute> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => FormRoute(_account!)),
+                  MaterialPageRoute(builder: (context) => FormRoute(store!, -1)),
                 );
               },
             ),ElevatedButton(
@@ -233,9 +233,10 @@ class _FirstRouteState extends State<FirstRoute> {
 }
 
 class FormRoute extends StatelessWidget {
-  final GoogleSignInAccount? account;
+  final FormStore store;
+  final int index;
 
-   const FormRoute(  GoogleSignInAccount this.account, {super.key });
+   const FormRoute(  this.store, this.index, {super.key });
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +245,7 @@ class FormRoute extends StatelessWidget {
         title: const Text('Formulaire saisie'),
       ),
       body: Center(
-          child:  MyCustomForm( account!)
+          child:  MyCustomForm( store!, index)
         ),
 
     );

@@ -11,12 +11,11 @@ import 'custom_image_widget_web.dart';
 import 'image_widget.dart';
 
 
-
 // Define a custom Form widget.
 class MyCustomForm extends StatefulWidget {
-  const MyCustomForm( sign_in.GoogleSignInAccount this.account,{super.key}) ;
-  final sign_in.GoogleSignInAccount? account;
-
+  const MyCustomForm(this.store,this.index, {super.key}) ;
+  final FormStore store;
+  final int index;
 
   @override
   MyCustomFormState createState() {
@@ -33,30 +32,35 @@ class MyCustomFormState extends State<MyCustomForm> {
   // Note: This is a `GlobalKey<FormState>`,
   // not a GlobalKey<MyCustomFormState>.
 
-
+  Map<String, String> initialValues= {};
 
   final _formKey = GlobalKey<FormState>();
   Map files = {};
+  Map<String, TextEditingController> controllers = {};
+
 
   final ScrollController _scrollController = ScrollController();
 
   TextEditingController dateInputController = TextEditingController();
 
-  _row(int index) {
+  _row(int formIndex) {
     return Row(
       children: [
-        Text('ID: $index'),
+        Text('ID: $formIndex'),
         const SizedBox(width: 30),
         Expanded(
-          child: _comp(index),
+          child: _comp(formIndex),
         ),
       ],
     );
   }
 
-  Widget _comp(int index) {
-    if (index == 0) {
-      return TextFormField(
+  Widget _comp(int formIndex) {
+    if (formIndex == 0) {
+      var myController = TextEditingController(text : initialValues["NOM"]);
+      controllers.putIfAbsent("NOM", () => myController);
+      var textField = TextFormField(
+        controller: myController,
         // The validator receives the text that the user has entered.
         validator: (value) {
           if (value == null || value.isEmpty) {
@@ -66,7 +70,8 @@ class MyCustomFormState extends State<MyCustomForm> {
         },
 
       );
-    } else if (index == 1) {
+      return textField;
+    } else if (formIndex == 1) {
       return TextField(
           controller: dateInputController,
           decoration: const InputDecoration(
@@ -97,12 +102,12 @@ class MyCustomFormState extends State<MyCustomForm> {
     else {
       if( kIsWeb) {
       return CustomImageFormFieldWeb (
-          (value) => {files[index] = value },
-          files[ index]
+          (value) => {files[formIndex] = value },
+          files[ formIndex]
       );} else  {
         return CustomImageFormField (
-                (value) => {files[index] = value },
-            files[ index]
+                (value) => {files[formIndex] = value },
+            files[ formIndex]
         );
       }
 
@@ -123,6 +128,16 @@ class MyCustomFormState extends State<MyCustomForm> {
   @override
   Widget build(BuildContext context) {
     // Build a Form widget using the _formKey created above.
+    return FutureBuilder<List<Map<String, String>>>(
+        future: widget.store.loadData(),
+    builder: (context, AsyncSnapshot<List<Map<String, String>>> snapshot) {
+    if (snapshot.hasData) {
+      if( widget.index!= -1) {
+        initialValues = snapshot.data!.elementAt(widget.index);
+      }
+
+
+
     return Form(
         key: _formKey,
         child: Scaffold(
@@ -155,7 +170,7 @@ class MyCustomFormState extends State<MyCustomForm> {
             bottomNavigationBar:
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               ElevatedButton(
-                onPressed: () {
+                onPressed: ()  {
                   // Validate returns true if the form is valid, or false otherwise.
                   if (_formKey.currentState!.validate()) {
                     // If the form is valid, display a snackbar. In the real world,
@@ -165,23 +180,31 @@ class MyCustomFormState extends State<MyCustomForm> {
                     );
 
                     _formKey.currentState!.save();
-                    FormStore store = FormStore(widget.account!);
 
                     files.forEach((key, file) { if( file is Uint8List) {
-                      store.saveImage(file);
+                      widget.store.saveImage(file);
                     } else {
-                      store.save(file);
+                      widget.store.save(file);
                     }
                     }
                     );
 
-                    store.saveData();
+                    Map<String, String> formValues = {};
+                    if( initialValues["ID"] != null) {
+                      formValues.putIfAbsent("ID", () => initialValues["ID"]!);
+                    }
+                    formValues.putIfAbsent("NOM", () => controllers["NOM"]!.text);
+
+
+                    widget.store.saveData(widget.index,formValues);
+
+                    Navigator.pop(context, true);
                   }
 
 
                 },
                 child: const Text('Submit2'),
               )
-            ])));
+            ])));} else {return const CircularProgressIndicator();} });
   }
 }
