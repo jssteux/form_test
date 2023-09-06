@@ -20,11 +20,10 @@ class MyCustomList extends StatefulWidget {
 // Define a corresponding State class.
 // This class holds data related to the form.
 class MyCustomListState extends State<MyCustomList> {
-  final ScrollController _scrollController = ScrollController();
-
+  late ScrollController _scrollController;
+  double initialScrollOffset = 0;
   late List<Map<String, String>> _items;
   Key _refreshKey = UniqueKey();
-
 
   Widget _comp(int index) {
 
@@ -37,8 +36,8 @@ class MyCustomListState extends State<MyCustomList> {
       Expanded(child: Text(_items.elementAt(index)['DATE_NAISSANCE']!)),
     ])),
     onTap: () {
-
-
+      initialScrollOffset = _scrollController.offset;
+      print('offset :$initialScrollOffset' );
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => FormRoute(widget.store!, current)),
@@ -77,6 +76,7 @@ class MyCustomListState extends State<MyCustomList> {
         builder: (context, AsyncSnapshot<List<Map<String, String>>> snapshot) {
           if (snapshot.hasData) {
             _items = snapshot.data!;
+            _scrollController = ScrollController(initialScrollOffset: initialScrollOffset);
             return Form(
                 child: Column(children: <Widget>[
               const ListTile(

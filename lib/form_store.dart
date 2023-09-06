@@ -15,7 +15,6 @@ const spreadsheetId = '1MBNPE_XOPGy-x_UjVOI81eKbFCQOVq-4vvuxhwnsQ1s';
 class FormStore {
   final sign_in.GoogleSignInAccount account;
    FormStore(this.account);
-   var updating = false;
 
 
   save(File? file) async {
@@ -108,14 +107,11 @@ class FormStore {
 
 
 
-  saveData(int index, Map<String, String> formValues) async {
+  saveData(BuildContext context, Map<String, String> formValues) async {
 
     test();
 
-    updating = true;
-    final authHeaders = await account.authHeaders;
 
-    //final authenticateClient = GoogleAuthClient(authHeaders);
     final authenticateClient = await obtainServiceCredentials();
     final driveApi = drive.DriveApi(authenticateClient);
 
@@ -137,6 +133,21 @@ class FormStore {
     else {
       */
 
+    // Reload datas
+    List<Map<String,String>> datas = await loadData();
+
+    // Search current item
+    var index = -1;
+
+    String? id = formValues["ID"];
+    if( id != null) {
+      for (int i = 0; i < datas.length; i++) {
+        if( datas.elementAt(i)["ID"] == id) {
+          index = i ;
+        }
+      }
+    }
+
 
     if( index == -1) {
       range="CLIENT!A1:D1";
@@ -144,11 +155,7 @@ class FormStore {
       uri =
       '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW';
 
-
-
       // Create new ID
-
-      List<Map<String,String>> datas = await loadDataInternal( false) ;
       int key = 0;
       for (int i = 0; i < datas.length; i++) {
         String? s = datas.elementAt(i)["ID"];
@@ -156,7 +163,7 @@ class FormStore {
           try {
             var b = int.parse(s);
             if( b > key) {
-              key = b;
+              key = b + 1;
             }
           } on Exception catch (_) {
 
@@ -197,25 +204,15 @@ class FormStore {
   /*
   }
   */
-    updating = false;
 
     //print(response.body.toString());
-
+    if (context.mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   Future<List<Map<String,String>>> loadData()  async {
-    return loadDataInternal( true);
-  }
 
-
-
-  Future<List<Map<String,String>>> loadDataInternal(bool wait)  async {
-
-    if( wait) {
-      while (updating == true) {
-        await Future.delayed(const Duration(seconds: 1));
-      }
-    }
 
     final authHeaders = await account.authHeaders;
 

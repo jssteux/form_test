@@ -196,9 +196,7 @@ class MyCustomFormState extends State<MyCustomForm> {
                     formValues.putIfAbsent("NOM", () => controllers["NOM"]!.text);
 
 
-                    widget.store.saveData(widget.index,formValues);
-
-                    Navigator.pop(context, true);
+                    widget.store.saveData(context, formValues);
                   }
 
 
