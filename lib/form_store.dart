@@ -1,8 +1,11 @@
+import 'dart:collection';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert' ;
 import 'package:flutter/widgets.dart';
+import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/main.dart';
+import 'package:form_test/sheet.dart';
 import 'package:google_sign_in/google_sign_in.dart' as sign_in;
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
@@ -134,42 +137,67 @@ class FormStore {
       */
 
     // Reload datas
-    List<Map<String,String>> datas = await loadData();
+    DatasSheet sheet =  await loadData();
+
+
+
 
     // Search current item
     var index = -1;
-
     String? id = formValues["ID"];
     if( id != null) {
-      for (int i = 0; i < datas.length; i++) {
-        if( datas.elementAt(i)["ID"] == id) {
+      for (int i = 0; i < sheet.datas.length; i++) {
+        if( sheet.datas.elementAt(i)["ID"] == id) {
           index = i ;
         }
       }
     }
 
 
+    // Create new ID
+    int key = 0;
+    for (int i = 0; i < sheet.datas.length; i++) {
+      String? s = sheet.datas.elementAt(i)["ID"];
+      if (s != null) {
+        try {
+          var b = int.parse(s);
+          if( b > key) {
+            key = b + 1;
+          }
+        } on Exception catch (_) {
+
+        }
+      }
+    }
+
+
+
+
+    /* Create values */
+    int nbColumns = sheet.columns.length;
+    List<String> values = [];
+
+    for(int i=0 ; i<sheet.columns.length;i++) {
+      String name = sheet.columns.keys.elementAt(i);
+      String? value = formValues[name];
+      if( value == null)  {
+        if(  name == "ID") {
+          value = key.toString();
+        } else  {
+          value = "";
+        }
+      }
+      values.add(value);
+
+    }
+
+    String lastColumn = String.fromCharCode(65 + nbColumns -1);
+
     if( index == -1) {
-      range="CLIENT!A1:D1";
+      range='CLIENT!A1:$lastColumn''1';
       encodedRange = Uri.encodeComponent(range);
       uri =
       '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW';
-
-      // Create new ID
-      int key = 0;
-      for (int i = 0; i < datas.length; i++) {
-        String? s = datas.elementAt(i)["ID"];
-        if (s != null) {
-          try {
-            var b = int.parse(s);
-            if( b > key) {
-              key = b + 1;
-            }
-          } on Exception catch (_) {
-
-          }
-        }
-      }
 
 
       final response = await authenticateClient.post(
@@ -178,15 +206,17 @@ class FormStore {
           {
             "range": range,
             "majorDimension": "ROWS",
-            'values': [ [key.toString(),formValues["NOM"]]],
+            'values': [ values ],
           },
         ),
       );
     } else  {
       int indexInsertion = index+2;
-      range = "CLIENT!A$indexInsertion:D$indexInsertion";
+      range = "CLIENT!A$indexInsertion:$lastColumn$indexInsertion";
+
 
       encodedRange = Uri.encodeComponent(range);
+
       uri =
       '$_sheetsEndpoint$sheetFileId/values/$encodedRange?valueInputOption=RAW';
       final response = await authenticateClient.put(
@@ -195,7 +225,7 @@ class FormStore {
           {
             "range": range,
             "majorDimension": "ROWS",
-            'values': [ [formValues["ID"],formValues["NOM"]]],
+            'values': [ values ],
           },
         ),
       );
@@ -211,7 +241,11 @@ class FormStore {
     }
   }
 
-  Future<List<Map<String,String>>> loadData()  async {
+
+
+
+
+  Future<DatasSheet> loadData()  async {
 
 
     final authHeaders = await account.authHeaders;
@@ -247,7 +281,16 @@ class FormStore {
       res.add(rowMap);
     }
 
-    return res;
+    LinkedHashMap<String,ColumnDescriptor> columns = LinkedHashMap<String,ColumnDescriptor>();
+
+    columns.putIfAbsent("ID", () => ColumnDescriptor("STRING"));
+    columns.putIfAbsent("NOM", () => ColumnDescriptor("STRING"));
+    columns.putIfAbsent("PRENOM", () => ColumnDescriptor("STRING"));
+    columns.putIfAbsent("DATE_NAISSANCE", () => ColumnDescriptor("DATE"));
+    columns.putIfAbsent("PHOTO", () => ColumnDescriptor("GOOGLE_IMAGE"));
+
+
+    return DatasSheet(res, columns);
     //return  [ Map.unmodifiable({'NOM':'Le rouzic'}), Map.unmodifiable({'NOM':'STEUX'}) ];
   }
 

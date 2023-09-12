@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:form_test/form_store.dart';
 import 'package:form_test/main.dart';
+import 'package:form_test/sheet.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
 
 // Define a custom Form widget.
@@ -70,12 +71,12 @@ class MyCustomListState extends State<MyCustomList> {
   Widget build(BuildContext context) {
     // Build a Form widget using the _formKey created above.
 
-    return FutureBuilder<List<Map<String, String>>>(
+    return FutureBuilder<DatasSheet>(
         key: _refreshKey,
         future: widget.store.loadData(),
-        builder: (context, AsyncSnapshot<List<Map<String, String>>> snapshot) {
+        builder: (context, AsyncSnapshot<DatasSheet> snapshot) {
           if (snapshot.hasData) {
-            _items = snapshot.data!;
+            _items = snapshot.data!.datas;
             _scrollController = ScrollController(initialScrollOffset: initialScrollOffset);
             return Form(
                 child: Column(children: <Widget>[

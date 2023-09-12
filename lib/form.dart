@@ -1,8 +1,11 @@
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/form_store.dart';
+import 'package:form_test/sheet.dart';
 import 'package:intl/intl.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
 import 'package:google_sign_in/google_sign_in.dart' as sign_in;
@@ -33,6 +36,7 @@ class MyCustomFormState extends State<MyCustomForm> {
   // not a GlobalKey<MyCustomFormState>.
 
   Map<String, String> initialValues= {};
+  late LinkedHashMap<String,ColumnDescriptor> columns;
 
   final _formKey = GlobalKey<FormState>();
   Map files = {};
@@ -41,7 +45,6 @@ class MyCustomFormState extends State<MyCustomForm> {
 
   final ScrollController _scrollController = ScrollController();
 
-  TextEditingController dateInputController = TextEditingController();
 
   _row(int formIndex) {
     return Row(
@@ -56,9 +59,14 @@ class MyCustomFormState extends State<MyCustomForm> {
   }
 
   Widget _comp(int formIndex) {
-    if (formIndex == 0) {
-      var myController = TextEditingController(text : initialValues["NOM"]);
-      controllers.putIfAbsent("NOM", () => myController);
+
+
+    String columnName = columns.keys.elementAt(formIndex);
+    ColumnDescriptor columDescriptor = columns[columnName]!;
+
+    if (columDescriptor.type == "STRING") {
+      var myController = TextEditingController(text : initialValues[columnName]);
+      controllers.putIfAbsent(columnName, () => myController);
       var textField = TextFormField(
         controller: myController,
         // The validator receives the text that the user has entered.
@@ -71,9 +79,11 @@ class MyCustomFormState extends State<MyCustomForm> {
 
       );
       return textField;
-    } else if (formIndex == 1) {
+    } else if (columDescriptor.type == "DATE") {
+      var myController = TextEditingController(text : initialValues[columnName]);
+      controllers.putIfAbsent(columnName, () => myController);
       return TextField(
-          controller: dateInputController,
+          controller: myController,
           decoration: const InputDecoration(
               icon: Icon(Icons.calendar_today), //icon of text field
               labelText: "Enter Date" //label text of field
@@ -93,7 +103,7 @@ class MyCustomFormState extends State<MyCustomForm> {
               String formattedDate = DateFormat('yyyy-MM-dd').format(pickedDate);
               //you can implement different kind of Date Format here according to your requirement
 
-              dateInputController.text = formattedDate;
+              myController.text = formattedDate;
             }
 
           });
@@ -119,7 +129,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
   List<Widget> buildWidgets() {
     List<Widget> widgets = [];
-    for(int i=0; i<5;i++){
+    for(int i=0; i<columns.length;i++){
       widgets.add(_comp(i));
     }
     return widgets;
@@ -128,12 +138,13 @@ class MyCustomFormState extends State<MyCustomForm> {
   @override
   Widget build(BuildContext context) {
     // Build a Form widget using the _formKey created above.
-    return FutureBuilder<List<Map<String, String>>>(
+    return FutureBuilder<DatasSheet>(
         future: widget.store.loadData(),
-    builder: (context, AsyncSnapshot<List<Map<String, String>>> snapshot) {
+    builder: (context, AsyncSnapshot<DatasSheet> snapshot) {
     if (snapshot.hasData) {
+      columns = snapshot.data!.columns;
       if( widget.index!= -1) {
-        initialValues = snapshot.data!.elementAt(widget.index);
+        initialValues = snapshot.data!.datas.elementAt(widget.index);
       }
 
 
@@ -193,7 +204,16 @@ class MyCustomFormState extends State<MyCustomForm> {
                     if( initialValues["ID"] != null) {
                       formValues.putIfAbsent("ID", () => initialValues["ID"]!);
                     }
-                    formValues.putIfAbsent("NOM", () => controllers["NOM"]!.text);
+
+                    for (int i=0; i< columns.length; i++) {
+                      String columnName = columns.keys.elementAt(i);
+                      ColumnDescriptor columDescriptor = columns[columnName]!;
+
+                      if( columDescriptor.type == "STRING" || columDescriptor.type == "DATE") {
+                        formValues.putIfAbsent(columnName, () =>
+                        controllers[columnName]!.text );
+                      }
+                    }
 
 
                     widget.store.saveData(context, formValues);
