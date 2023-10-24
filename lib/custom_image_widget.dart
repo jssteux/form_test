@@ -1,13 +1,17 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:form_test/custom_image_state.dart';
+import 'package:form_test/form_store.dart';
 
-class CustomImageFormField extends FormField<File?> {
-
-  CustomImageFormField(FormFieldSetter<File> onSaved,
-      File? initialValue, {super.key}) : super(
+class CustomImageFormField extends FormField<CustomImageState?> {
+  final FormStore store;
+  CustomImageFormField(FormFieldSetter<CustomImageState> onSaved,
+    this.store,
+      CustomImageState? initialValue, {super.key}) : super(
       onSaved: onSaved,
       initialValue: initialValue,
       builder: (formFieldState) {
@@ -28,7 +32,7 @@ class CustomImageFormField extends FormField<File?> {
                       .pickFiles(type: FileType.image, allowMultiple: false);
                   if (file != null) {
                     File? pickedFile = File(file.files.first.path!);
-                    formFieldState.didChange(pickedFile);
+                    formFieldState.didChange( CustomImageState(true, await pickedFile.readAsBytes()));
                   }
                 },
               ),
@@ -36,10 +40,13 @@ class CustomImageFormField extends FormField<File?> {
         );
 
         if (formFieldState.value != null) {
-          c.children.add(Image.file(formFieldState.value!));
+          Uint8List? content = formFieldState.value!.content;
+          if( content != null) {
+               c.children.add(Image.memory(content, width:450, height: 500,));
+
+          }
         }
 
-        print('refresh');
         return c;
       });
 }

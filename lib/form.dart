@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:form_test/column_descriptor.dart';
+import 'package:form_test/custom_image_state.dart';
 import 'package:form_test/form_store.dart';
+import 'package:form_test/row.dart';
 import 'package:form_test/sheet.dart';
 import 'package:intl/intl.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
@@ -36,10 +38,12 @@ class MyCustomFormState extends State<MyCustomForm> {
   // not a GlobalKey<MyCustomFormState>.
 
   Map<String, String> initialValues= {};
+  late Map<String, CustomImageState> files;
+  late bool autofocusInit;
   late LinkedHashMap<String,ColumnDescriptor> columns;
 
   final _formKey = GlobalKey<FormState>();
-  Map files = {};
+
   Map<String, TextEditingController> controllers = {};
 
 
@@ -64,6 +68,8 @@ class MyCustomFormState extends State<MyCustomForm> {
     String columnName = columns.keys.elementAt(formIndex);
     ColumnDescriptor columDescriptor = columns[columnName]!;
 
+
+
     if (columDescriptor.type == "STRING") {
       var myController = TextEditingController(text : initialValues[columnName]);
       controllers.putIfAbsent(columnName, () => myController);
@@ -82,44 +88,103 @@ class MyCustomFormState extends State<MyCustomForm> {
     } else if (columDescriptor.type == "DATE") {
       var myController = TextEditingController(text : initialValues[columnName]);
       controllers.putIfAbsent(columnName, () => myController);
-      return TextField(
+      return TextFormField(
           controller: myController,
-          decoration: const InputDecoration(
-              icon: Icon(Icons.calendar_today), //icon of text field
+          decoration:
+
+          InputDecoration(
+              suffixIcon: IconButton (
+                onPressed: () async {
+                  DateTime initialDate;
+                  if( initialValues[columnName] != null) {
+                    try {
+                      initialDate =
+                          DateFormat('yyyy-MM-dd').parse(initialValues[columnName]!);
+                    } catch( e )  {
+                      initialDate = DateTime.now();
+                    }
+                  } else  {
+                    initialDate = DateTime.now();
+                  }
+
+
+                  DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: initialDate,
+                      //get today's date
+                      firstDate: DateTime(1900),
+                      //DateTime.now() - not to allow to choose before today.
+                      lastDate: DateTime.now()
+                  );
+
+                  if(pickedDate != null ){
+                    String formattedDate = DateFormat('yyyy-MM-dd').format(pickedDate);
+                    //you can implement different kind of Date Format here according to your requirement
+
+                    myController.text = formattedDate;
+                  }
+
+
+                },
+
+
+                icon: Icon(Icons.clear),
+              ),
               labelText: "Enter Date" //label text of field
               ),
-          readOnly: true, // when true user cannot edit text
-          onTap: () async {
+          //readOnly: true, // when true user cannot edit text
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter some text';
+            } else  {
+              DateTime initialDate;
 
-            DateTime? pickedDate = await showDatePicker(
-                context: context,
-                initialDate: DateTime.now(),
-                //get today's date
-                firstDate: DateTime(2000),
-                //DateTime.now() - not to allow to choose before today.
-                lastDate: DateTime(2102));
+                try {
+                  initialDate =
+                      DateFormat('yyyy-MM-dd').parse(
+                          value!);
+                } catch (e) {
+                  return 'incorrect date format';
+                }
 
-            if(pickedDate != null ){
-              String formattedDate = DateFormat('yyyy-MM-dd').format(pickedDate);
-              //you can implement different kind of Date Format here according to your requirement
-
-              myController.text = formattedDate;
             }
-
+            return null;
           });
+
     }
 
-    else {
+    else if (columDescriptor.type == "GOOGLE_IMAGE") {
+
+
       if( kIsWeb) {
       return CustomImageFormFieldWeb (
-          (value) => {files[formIndex] = value },
-          files[ formIndex]
-      );} else  {
+          (value) => {files[formIndex.toString()] = value! },
+          files[ formIndex.toString()]
+      );} else
+
+      {
         return CustomImageFormField (
-                (value) => {files[formIndex] = value },
-            files[ formIndex]
-        );
+                (value) => { if( value != null) files[formIndex.toString()] = value! },
+            widget.store,
+            files[formIndex.toString()]);
+
       }
+
+    } else  {
+      var myController = TextEditingController(text : initialValues[columnName]);
+      controllers.putIfAbsent(columnName, () => myController);
+      var textField = TextFormField(
+        controller: myController,
+        // The validator receives the text that the user has entered.
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter some text';
+          }
+          return null;
+        },
+
+      );
+      return textField;
 
     }
 
@@ -137,39 +202,24 @@ class MyCustomFormState extends State<MyCustomForm> {
 
   @override
   Widget build(BuildContext context) {
+    print('build');
     // Build a Form widget using the _formKey created above.
-    return FutureBuilder<DatasSheet>(
-        future: widget.store.loadData(),
-    builder: (context, AsyncSnapshot<DatasSheet> snapshot) {
+    return FutureBuilder<DatasRow>(
+        future: widget.store.loadRow(widget.index),
+    builder: (context, AsyncSnapshot<DatasRow> snapshot) {
     if (snapshot.hasData) {
       columns = snapshot.data!.columns;
+
       if( widget.index!= -1) {
-        initialValues = snapshot.data!.datas.elementAt(widget.index);
+        initialValues = snapshot.data!.datas;
       }
 
-
+      files = snapshot.data!.files;
 
     return Form(
         key: _formKey,
         child: Scaffold(
-            body: VsScrollbar(
-              controller: _scrollController,
-              showTrackOnHover: true,
-              // default false
-              isAlwaysShown: true,
-              // default false
-              scrollbarFadeDuration: const Duration(milliseconds: 500),
-              // default : Duration(milliseconds: 300)
-              scrollbarTimeToFade: const Duration(milliseconds: 800),
-              // default : Duration(milliseconds: 600)
-              style: VsScrollbarStyle(
-                hoverThickness: 10.0, // default 12.0
-                radius: const Radius.circular(12), // default Radius.circular(8.0)
-                thickness: 10.0, // [ default 8.0 ]
-                color: Colors.purple.shade900, // default ColorScheme Theme
-              ),
-
-              child: SingleChildScrollView(
+            body:  SingleChildScrollView(
                 controller: _scrollController,
 
                 child:  Column(
@@ -177,7 +227,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
               ),
               ),
-            ),
+
             bottomNavigationBar:
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               ElevatedButton(
@@ -192,13 +242,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
                     _formKey.currentState!.save();
 
-                    files.forEach((key, file) { if( file is Uint8List) {
-                      widget.store.saveImage(file);
-                    } else {
-                      widget.store.save(file);
-                    }
-                    }
-                    );
+
 
                     Map<String, String> formValues = {};
                     if( initialValues["ID"] != null) {
@@ -213,10 +257,17 @@ class MyCustomFormState extends State<MyCustomForm> {
                         formValues.putIfAbsent(columnName, () =>
                         controllers[columnName]!.text );
                       }
+
+                      if( columDescriptor.type == "GOOGLE_IMAGE") {
+                        if( initialValues[columnName] != null) {
+                          formValues.putIfAbsent(
+                              columnName, () => initialValues[columnName]!);
+                        }
+                      }
                     }
 
 
-                    widget.store.saveData(context, formValues);
+                    widget.store.saveData(context, formValues, columns, files);
                   }
 
 

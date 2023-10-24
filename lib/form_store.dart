@@ -4,7 +4,9 @@ import 'dart:typed_data';
 import 'dart:convert' ;
 import 'package:flutter/widgets.dart';
 import 'package:form_test/column_descriptor.dart';
+import 'package:form_test/custom_image_state.dart';
 import 'package:form_test/main.dart';
+import 'package:form_test/row.dart';
 import 'package:form_test/sheet.dart';
 import 'package:google_sign_in/google_sign_in.dart' as sign_in;
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -20,9 +22,9 @@ class FormStore {
    FormStore(this.account);
 
 
-  save(File? file) async {
+  Future<String?> save(File? file) async {
     if (file == null) {
-      return;
+      return null;
     }
     final authHeaders = await account.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -37,14 +39,15 @@ class FormStore {
 
       String? id = current.id!;
       driveFile.parents = [id];
-      await driveApi.files
+      var fileCreated = await driveApi.files
           .create(supportsAllDrives: true, driveFile, uploadMedia: media);
+      return fileCreated.id;
     }
   }
 
-  saveImage(Uint8List? bytes) async {
+  Future<String?> saveImage(Uint8List? bytes) async {
     if (bytes == null) {
-      return;
+      return null;
     }
     final authHeaders = await account.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -62,11 +65,53 @@ class FormStore {
 
       String? id = current.id!;
       driveFile.parents = [id];
-      await driveApi.files
+      var fileCreated = await driveApi.files
           .create(supportsAllDrives: true, driveFile, uploadMedia: media);
+      return fileCreated.id;
     }
   }
 
+
+  Future<Directory> getTemporaryDirectory() async {
+    bool exists =  await Directory("/files").exists();
+    if( exists == false) {
+      Directory.fromUri(Uri.directory("/files")).createSync();
+    }
+
+    return Directory("/files");
+  }
+
+  Future<Uint8List?> read(String url) async {
+
+    final authHeaders = await account.authHeaders;
+    final authenticateClient = GoogleAuthClient(authHeaders);
+    final driveApi = drive.DriveApi(authenticateClient);
+
+    RegExp exp = RegExp('https://drive.google.com/file/d/([a-zA-Z0-9_]*)/view');
+
+    Iterable<RegExpMatch> matches = exp.allMatches(url);
+    for (final m in matches) {
+      String fileId = m[1]!;
+      drive.Media readFile = await driveApi.files.get(fileId,supportsAllDrives: true, downloadOptions: drive.DownloadOptions.fullMedia) as drive.Media;
+
+//      final Directory tempDir = await getTemporaryDirectory();
+
+      final File file = File(fileId);
+
+      List<int> dataStore = [];
+      var stream = readFile.stream;
+      var done = false;
+
+
+      await for (final value in stream) {
+        dataStore.insertAll(dataStore.length, value);
+        var lg = dataStore.length;
+      }
+
+      return Uint8List.fromList(dataStore);
+    }
+
+    }
 
 
 
@@ -110,9 +155,34 @@ class FormStore {
 
 
 
-  saveData(BuildContext context, Map<String, String> formValues) async {
+  saveData(BuildContext context, Map<String, String> formValues, LinkedHashMap<String,ColumnDescriptor> columns, Map<String, CustomImageState> files ) async {
 
     test();
+
+    for (int i =0; i< files.length; i++) {
+      var key = files.keys.elementAt(i);
+      var file = files[key];
+
+      String? id;
+      if (file is CustomImageState) {
+        if( file.modified) {
+          id = await saveImage(file.content);
+        }
+      } else {
+        id = await save(file);
+      }
+
+      if (id != null) {
+        String? columnName;
+        columnName = columns.keys.elementAt(int.parse(key));
+        if (columnName != null) {
+          formValues[columnName!] =
+
+          "https://drive.google.com/file/d/$id/view";
+        }
+
+      }
+    }
 
 
     final authenticateClient = await obtainServiceCredentials();
@@ -266,6 +336,8 @@ class FormStore {
     final List<dynamic> cellsName = rows[0];
     final name = cellsName.elementAt(0);
 
+    List<Map<String,Object>> files = [];
+
     List<Map<String,String>> res = [];
     for(int i = 1; i< rows.length; i++) {
       Map<String,String> rowMap = {};
@@ -290,13 +362,41 @@ class FormStore {
     columns.putIfAbsent("PHOTO", () => ColumnDescriptor("GOOGLE_IMAGE"));
 
 
+
+
     return DatasSheet(res, columns);
     //return  [ Map.unmodifiable({'NOM':'Le rouzic'}), Map.unmodifiable({'NOM':'STEUX'}) ];
   }
 
 
+  Future<DatasRow> loadRow( int index)  async {
 
-  Future<String?> getSheetFileId(drive.DriveApi driveApi) async {
+    DatasSheet sheet = await loadData();
+     Map<String,String> rowDatas = {};
+     if( index != -1) {
+       rowDatas = sheet.datas[index];
+     }
+     LinkedHashMap<String,ColumnDescriptor> columns= sheet.columns;
+
+      Map<String,CustomImageState> rowFiles = {};
+      for (int j = 0; j < columns.length; j++) {
+        ColumnDescriptor desc = columns.values.elementAt(j);
+        String columnName = columns.keys.elementAt(j);
+        if (desc.type == "GOOGLE_IMAGE") {
+          String? url = rowDatas[columnName];
+          if (url != null && url.isNotEmpty) {
+            Uint8List? content = await read(url!);
+            rowFiles.putIfAbsent(j.toString(), () => CustomImageState(false, content)!);
+
+          }
+        }
+      }
+
+    return DatasRow(rowDatas, columns, rowFiles);
+  }
+
+
+    Future<String?> getSheetFileId(drive.DriveApi driveApi) async {
 
     //search main
     drive.Drive? current = await getFolder(driveApi);
