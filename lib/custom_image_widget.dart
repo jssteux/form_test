@@ -8,10 +8,18 @@ import 'package:form_test/custom_image_state.dart';
 import 'package:form_test/form_store.dart';
 
 class CustomImageFormField extends FormField<CustomImageState?> {
+
+
   final FormStore store;
+
+
+
   CustomImageFormField(FormFieldSetter<CustomImageState> onSaved,
-    this.store,
-      CustomImageState? initialValue, {super.key}) : super(
+      this.store,
+      CustomImageState? initialValue,
+
+
+      {super.key, super.validator,super.autovalidateMode}) : super(
       onSaved: onSaved,
       initialValue: initialValue,
       builder: (formFieldState) {
@@ -56,6 +64,9 @@ class CustomImageFormField extends FormField<CustomImageState?> {
 
             ])),
             labelText: "Image", //label text of field
+
+            errorText: formFieldState.errorText
+
             ),
             child: child
 

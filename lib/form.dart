@@ -58,8 +58,10 @@ class MyCustomFormState extends State<MyCustomForm> {
           controller: myController,
           // The validator receives the text that the user has entered.
           validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter some text';
+            if( formIndex == 1) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter some text';
+              }
             }
             return null;
           },
@@ -127,6 +129,7 @@ class MyCustomFormState extends State<MyCustomForm> {
           ),
           //readOnly: true, // when true user cannot edit text
           validator: (value) {
+
             if (value == null || value.isEmpty) {
               return 'Please enter some text';
             } else {
@@ -135,7 +138,9 @@ class MyCustomFormState extends State<MyCustomForm> {
               }
             }
             return null;
-          });
+          }
+      )
+    ;
     } else if (columDescriptor.type == "GOOGLE_IMAGE") {
       if (kIsWeb) {
         return CustomImageFormFieldWeb(
@@ -151,7 +156,22 @@ class MyCustomFormState extends State<MyCustomForm> {
                 null
             },
             widget.store,
-            files[formIndex.toString()]);
+            files[formIndex.toString()],
+            validator: (value) {
+
+              if (value == null || value.content == null) {
+                return 'Please enter a picture';
+              } else {
+                try {} catch (e) {
+                  return 'incorrect date format';
+                }
+              }
+
+              return null;
+            },
+            autovalidateMode: AutovalidateMode.onUserInteraction,);
+
+
       }
     } else {
       var myController = TextEditingController(text: initialValues[columnName]);

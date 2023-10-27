@@ -90,7 +90,7 @@ class FormStore {
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
 
-    RegExp exp = RegExp('https://drive.google.com/file/d/([a-zA-Z0-9_]*)/view');
+    RegExp exp = RegExp('https://drive.google.com/file/d/([a-zA-Z0-9_-]*)/view');
 
     Iterable<RegExpMatch> matches = exp.allMatches(url);
     for (final m in matches) {
@@ -166,7 +166,11 @@ class FormStore {
       String? id;
       if (file is CustomImageState) {
         if( file.modified) {
-          id = await saveImage(file.content);
+          if( file.content != null) {
+            id = await saveImage(file.content);
+          } else  {
+            id = "";
+          }
         }
       } else {
         id = await save(file);
@@ -176,11 +180,15 @@ class FormStore {
         String? columnName;
         columnName = columns.keys.elementAt(int.parse(key));
         if (columnName.isNotEmpty) {
-          formValues[columnName] =
 
-          "https://drive.google.com/file/d/$id/view";
+          if( id.isNotEmpty) {
+            formValues[columnName] =
+
+            "https://drive.google.com/file/d/$id/view";
+          } else  {
+            formValues[columnName] = "";
+          }
         }
-
       }
     }
 
