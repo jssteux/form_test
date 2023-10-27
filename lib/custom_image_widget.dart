@@ -16,39 +16,58 @@ class CustomImageFormField extends FormField<CustomImageState?> {
       initialValue: initialValue,
       builder: (formFieldState) {
 
-        Column c = Column(
-            children: [
-
-              MaterialButton(
-                color: Colors.blue,
-                child: const Text(
-                    "Pick Image from Camera (form field)",
-                    style: TextStyle(
-                        color: Colors.white70, fontWeight: FontWeight.bold
-                    )
-                ),
-                onPressed: () async {
-                  FilePickerResult? file = await FilePicker.platform
-                      .pickFiles(type: FileType.image, allowMultiple: false);
-                  if (file != null) {
-                    File? pickedFile = File(file.files.first.path!);
-                    formFieldState.didChange( CustomImageState(true, await pickedFile.readAsBytes()));
-                  }
-                },
-              ),
-            ]
-        );
+        Widget? child;
 
         if (formFieldState.value != null) {
           Uint8List? content = formFieldState.value!.content;
           if( content != null) {
-               c.children.add(Image.memory(content, width:450, height: 500,));
-
+            child = Image.memory(content);
           }
         }
 
+        child ??= Container();
+
+        Column c = Column(
+            children: [
+
+         InputDecorator(decoration: InputDecoration(
+          suffixIcon:
+            SizedBox(
+            width: 100,
+            child: Row(children: [
+              const Spacer(),
+                IconButton(
+                  onPressed: () async {
+                    FilePickerResult? file = await FilePicker.platform
+                        .pickFiles(type: FileType.image, allowMultiple: false);
+                    if (file != null) {
+                      File? pickedFile = File(file.files.first.path!);
+                      formFieldState.didChange( CustomImageState(true, await pickedFile.readAsBytes()));
+                    }
+                  },
+                  icon: const Icon(Icons.image),
+                ),
+              IconButton(
+                onPressed: () async {
+                  formFieldState.didChange(  CustomImageState(true, null));
+                },
+                icon: const Icon(Icons.clear),
+              ),
+
+            ])),
+            labelText: "Image", //label text of field
+            ),
+            child: child
+
+          )
+        ]);
+
+
+
         return c;
       });
+
+
 }
 
 

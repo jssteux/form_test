@@ -75,15 +75,12 @@ class MyCustomFormState extends State<MyCustomForm> {
       return TextFormField(
           controller: myController,
           decoration: InputDecoration(
-
               suffixIcon:
-
-
               SizedBox(
                   width: 100,
                   child: Row(children: [
 
-
+                    const Spacer(),
                     IconButton(
                       onPressed: () async {
                         DateTime initialDate;
@@ -126,15 +123,6 @@ class MyCustomFormState extends State<MyCustomForm> {
 
                   ])),
 
-
-
-
-
-
-
-
-
-
               labelText: "Enter Date" //label text of field
           ),
           //readOnly: true, // when true user cannot edit text
@@ -154,7 +142,8 @@ class MyCustomFormState extends State<MyCustomForm> {
                 (value) => files[formIndex.toString()] = value!,
             files[formIndex.toString()]);
       } else {
-        return CustomImageFormField(
+
+            return CustomImageFormField(
                 (value) => {
               if (value != null)
                 files[formIndex.toString()] = value
