@@ -38,10 +38,10 @@ class MyCustomListState extends State<MyCustomList> {
     ])),
     onTap: () {
       initialScrollOffset = _scrollController.offset;
-      print('offset :$initialScrollOffset' );
+      //print('offset :$initialScrollOffset' );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => FormRoute(widget.store!, current)),
+        MaterialPageRoute(builder: (context) => FormRoute(widget.store, current)),
       ).then((value) =>
             setState( (){ if(value == true) {
               _refreshKey = UniqueKey();} })); }

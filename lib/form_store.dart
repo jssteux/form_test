@@ -43,6 +43,7 @@ class FormStore {
           .create(supportsAllDrives: true, driveFile, uploadMedia: media);
       return fileCreated.id;
     }
+    return null;
   }
 
   Future<String?> saveImage(Uint8List? bytes) async {
@@ -69,6 +70,8 @@ class FormStore {
           .create(supportsAllDrives: true, driveFile, uploadMedia: media);
       return fileCreated.id;
     }
+
+    return null;
   }
 
 
@@ -96,21 +99,18 @@ class FormStore {
 
 //      final Directory tempDir = await getTemporaryDirectory();
 
-      final File file = File(fileId);
 
       List<int> dataStore = [];
       var stream = readFile.stream;
-      var done = false;
 
 
       await for (final value in stream) {
         dataStore.insertAll(dataStore.length, value);
-        var lg = dataStore.length;
       }
 
       return Uint8List.fromList(dataStore);
     }
-
+  return null;
     }
 
 
@@ -175,8 +175,8 @@ class FormStore {
       if (id != null) {
         String? columnName;
         columnName = columns.keys.elementAt(int.parse(key));
-        if (columnName != null) {
-          formValues[columnName!] =
+        if (columnName.isNotEmpty) {
+          formValues[columnName] =
 
           "https://drive.google.com/file/d/$id/view";
         }
@@ -269,8 +269,8 @@ class FormStore {
       uri =
       '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW';
 
-
-      final response = await authenticateClient.post(
+      //final response = await authenticateClient.post(
+       await authenticateClient.post(
         Uri.parse(uri ),
         body: jsonEncode(
           {
@@ -289,7 +289,8 @@ class FormStore {
 
       uri =
       '$_sheetsEndpoint$sheetFileId/values/$encodedRange?valueInputOption=RAW';
-      final response = await authenticateClient.put(
+      await authenticateClient.put(
+      //final response = await authenticateClient.put(
         Uri.parse(uri ),
         body: jsonEncode(
           {
@@ -299,7 +300,7 @@ class FormStore {
           },
         ),
       );
-      print(response.body.toString());
+      //print(response.body.toString());
     }
   /*
   }
@@ -334,9 +335,6 @@ class FormStore {
     final data = jsonDecode(response.body.toString());
     final List<dynamic> rows = data['values'];
     final List<dynamic> cellsName = rows[0];
-    final name = cellsName.elementAt(0);
-
-    List<Map<String,Object>> files = [];
 
     List<Map<String,String>> res = [];
     for(int i = 1; i< rows.length; i++) {
@@ -385,8 +383,8 @@ class FormStore {
         if (desc.type == "GOOGLE_IMAGE") {
           String? url = rowDatas[columnName];
           if (url != null && url.isNotEmpty) {
-            Uint8List? content = await read(url!);
-            rowFiles.putIfAbsent(j.toString(), () => CustomImageState(false, content)!);
+            Uint8List? content = await read(url);
+            rowFiles.putIfAbsent(j.toString(), () => CustomImageState(false, content));
 
           }
         }
