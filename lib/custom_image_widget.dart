@@ -39,7 +39,7 @@ class CustomImageFormField extends FormField<File?> {
           c.children.add(Image.file(formFieldState.value!));
         }
 
-        print('refresh');
+        //print('refresh');
         return c;
       });
 }
