@@ -2,12 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:form_test/list.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'form_store.dart';
-import 'google_auth_client.dart';
 import 'form.dart';
 import 'package:flutter/foundation.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
-import 'dart:convert' show json;
-import 'package:http/http.dart' as http;
 import 'src/sign_in_button.dart';
 import 'package:ensemble_ts_interpreter/parser/newjs_interpreter.dart';
 
@@ -38,8 +35,8 @@ String code = """
     """;
 
 JSInterpreter.fromCode(code, context).evaluate();
-print ("calcul age");
-print (context['age']);
+//print ("calcul age");
+//print (context['age']);
 }
 
 
@@ -73,7 +70,6 @@ class FirstRoute extends StatefulWidget {
 class _FirstRouteState extends State<FirstRoute> {
   GoogleSignInAccount? _account;
   late FormStore store;
-  String _contactText = '';
   bool _isAuthorized = false; // has granted permissions?
 
   @override
@@ -121,7 +117,7 @@ class _FirstRouteState extends State<FirstRoute> {
     try {
       await _googleSignIn.signIn();
     } catch (error) {
-      print(error);
+      //print(error);
     }
   }
 
@@ -164,7 +160,7 @@ class _FirstRouteState extends State<FirstRoute> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => FormRoute(store!, -1)),
+                  MaterialPageRoute(builder: (context) => FormRoute(store, -1)),
                 );
               },
             ),ElevatedButton(
@@ -172,7 +168,7 @@ class _FirstRouteState extends State<FirstRoute> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ListRoute(store!)),
+                  MaterialPageRoute(builder: (context) => ListRoute(store)),
                 );
               },
             )
@@ -245,7 +241,7 @@ class FormRoute extends StatelessWidget {
         title: const Text('Formulaire saisie'),
       ),
       body: Center(
-          child:  MyCustomForm( store!, index)
+          child:  MyCustomForm( store, index)
         ),
 
     );
@@ -265,7 +261,7 @@ class ListRoute extends StatelessWidget {
         title: const Text('Liste'),
       ),
       body: Center(
-            child:  MyCustomList( store!)
+            child:  MyCustomList( store)
 
       ),
     );
