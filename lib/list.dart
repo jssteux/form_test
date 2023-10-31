@@ -97,7 +97,7 @@ class MyCustomListState extends State<MyCustomList> {
                 controller: _scrollController,
                 showTrackOnHover: true,
                 // default false
- //               isAlwaysShown: true,
+                isAlwaysShown: true,
                 // default false
                 scrollbarFadeDuration: const Duration(milliseconds: 500),
                 // default : Duration(milliseconds: 300)
