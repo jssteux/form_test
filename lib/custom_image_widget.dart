@@ -7,7 +7,7 @@ import 'package:file_picker/file_picker.dart';
 class CustomImageFormField extends FormField<File?> {
 
   CustomImageFormField(FormFieldSetter<File> onSaved,
-      File? initialValue) : super(
+      File? initialValue, {super.key}) : super(
       onSaved: onSaved,
       initialValue: initialValue,
       builder: (formFieldState) {
@@ -39,7 +39,7 @@ class CustomImageFormField extends FormField<File?> {
           c.children.add(Image.file(formFieldState.value!));
         }
 
-        print('refresh');
+        //print('refresh');
         return c;
       });
 }

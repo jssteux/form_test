@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:form_test/form_store.dart';
@@ -6,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
 import 'package:google_sign_in/google_sign_in.dart' as sign_in;
 import 'custom_image_widget.dart';
-import 'image_widget.dart';
+
 
 
 
@@ -40,17 +39,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
   TextEditingController dateInputController = TextEditingController();
 
-  _row(int index) {
-    return Row(
-      children: [
-        Text('ID: $index'),
-        const SizedBox(width: 30),
-        Expanded(
-          child: _comp(index),
-        ),
-      ],
-    );
-  }
+
 
   Widget _comp(int index) {
     if (index == 0) {
@@ -93,7 +82,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
     else {
       return CustomImageFormField (
-          (value) => {files[index] = value },
+          (value) => files[index] = value,
           files[ index]
 
       );

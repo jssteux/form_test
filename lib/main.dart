@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'google_auth_client.dart';
 import 'form.dart';
 import 'package:google_sign_in/google_sign_in.dart' as sign_in;
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -34,8 +33,6 @@ class _FirstRouteState extends State<FirstRoute> {
               final googleSignIn = sign_in.GoogleSignIn.standard(scopes: [drive.DriveApi.driveScope]);
               account = await googleSignIn.signIn();
               if( account != null) {
-                final authHeaders = await account!.authHeaders;
-                final authenticateClient = GoogleAuthClient(authHeaders);
 
                 /*
                 final driveApi = drive.DriveApi(authenticateClient);
