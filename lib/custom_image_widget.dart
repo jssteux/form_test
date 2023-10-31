@@ -27,7 +27,7 @@ class CustomImageFormField extends FormField<File?> {
                   FilePickerResult? file = await FilePicker.platform
                       .pickFiles(type: FileType.image, allowMultiple: false);
                   if (file != null) {
-                    File? pickedFile = File(file.files.first.name!);
+                    File? pickedFile = File(file.files.first.name);
                     formFieldState.didChange(pickedFile);
                   }
                 },

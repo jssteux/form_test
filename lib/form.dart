@@ -1,4 +1,4 @@
-import 'dart:io';
+
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ import 'package:vs_scrollbar/vs_scrollbar.dart';
 import 'package:google_sign_in/google_sign_in.dart' as sign_in;
 import 'custom_image_widget.dart';
 import 'custom_image_widget_web.dart';
-import 'image_widget.dart';
+
 
 
 
@@ -42,17 +42,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
   TextEditingController dateInputController = TextEditingController();
 
-  _row(int index) {
-    return Row(
-      children: [
-        Text('ID: $index'),
-        const SizedBox(width: 30),
-        Expanded(
-          child: _comp(index),
-        ),
-      ],
-    );
-  }
+
 
   Widget _comp(int index) {
     if (index == 0) {
@@ -97,11 +87,11 @@ class MyCustomFormState extends State<MyCustomForm> {
     else {
       if( kIsWeb) {
       return CustomImageFormFieldWeb (
-          (value) => {files[index] = value },
+          (value) => files[index] = value,
           files[ index]
       );} else  {
         return CustomImageFormField (
-                (value) => {files[index] = value },
+                (value) => files[index] = value,
             files[ index]
         );
       }

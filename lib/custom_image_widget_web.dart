@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 
@@ -28,7 +27,6 @@ class CustomImageFormFieldWeb extends FormField<Uint8List?> {
                   FilePickerResult? file = await FilePicker.platform
                       .pickFiles(type: FileType.image, allowMultiple: false);
                   if (file != null) {
-                    File? pickedFile = File(file.files.first.name!);
                     Uint8List bytes = file.files.first.bytes!;
                     formFieldState.didChange(bytes);
                   }
@@ -39,7 +37,7 @@ class CustomImageFormFieldWeb extends FormField<Uint8List?> {
 
         if (formFieldState.value != null) {
           c.children.add(Image.memory(formFieldState.value!));
-          print('refresh');
+          //print('refresh');
         }
 
 
