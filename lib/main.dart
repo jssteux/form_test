@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:form_test/list.dart';
+import 'package:form_test/logger.dart';
+
 import 'package:google_sign_in/google_sign_in.dart';
 import 'form_store.dart';
 import 'form.dart';
@@ -14,6 +16,7 @@ typedef HandleSignInFn = Future<void> Function();
 
 
 void main() {
+
 
   runApp(const MaterialApp(
     title: 'Navigation Basics',
@@ -55,6 +58,7 @@ GoogleSignIn _googleSignIn = GoogleSignIn(
 
 
 class FirstRoute extends StatefulWidget {
+
   const FirstRoute({super.key});
 
   @override
@@ -70,7 +74,7 @@ class _FirstRouteState extends State<FirstRoute> {
   GoogleSignInAccount? _account;
   late FormStore store;
   bool _isAuthorized = false; // has granted permissions?
-
+  Logger logger = Logger();
 
 
   @override
@@ -84,7 +88,6 @@ class _FirstRouteState extends State<FirstRoute> {
         scopes: scopes,
       );
     }
-
 
     _googleSignIn.onCurrentUserChanged
         .listen((GoogleSignInAccount? account) async {
@@ -103,7 +106,7 @@ class _FirstRouteState extends State<FirstRoute> {
       // Now that we know that the user can access the required scopes, the app
       // can call the REST API.
       if (isAuthorized) {
-        store = FormStore(account!);
+        store = FormStore(account!, logger);
       }
     });
 
@@ -113,6 +116,9 @@ class _FirstRouteState extends State<FirstRoute> {
     // and the Google Sign In button together to "reduce friction and improve
     // sign-in rates" ([docs](https://developers.google.com/identity/gsi/web/guides/display-button#html)).
     _googleSignIn.signInSilently();
+
+
+
   }
 
 
@@ -143,7 +149,7 @@ class _FirstRouteState extends State<FirstRoute> {
       _isAuthorized = isAuthorized;
     });
     if (isAuthorized) {
-      store = FormStore(_account!);
+      store = FormStore(_account!, logger);
     }
   }
 

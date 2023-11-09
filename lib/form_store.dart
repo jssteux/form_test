@@ -5,6 +5,7 @@ import 'dart:convert' ;
 import 'package:flutter/widgets.dart';
 import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/custom_image_state.dart';
+import 'package:form_test/logger.dart';
 import 'package:form_test/main.dart';
 import 'package:form_test/row.dart';
 import 'package:form_test/sheet.dart';
@@ -19,7 +20,8 @@ const spreadsheetId = '1MBNPE_XOPGy-x_UjVOI81eKbFCQOVq-4vvuxhwnsQ1s';
 
 class FormStore {
   final sign_in.GoogleSignInAccount account;
-   FormStore(this.account);
+  final Logger logger;
+   FormStore(this.account, this.logger);
 
 
   Future<String?> save(File? file) async {
@@ -327,6 +329,7 @@ class FormStore {
 
   Future<DatasSheet> loadData()  async {
 
+    logger.logEvent("loadDatas A APPROFONDIR");
 
     final authHeaders = await account.authHeaders;
 
