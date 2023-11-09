@@ -6,7 +6,7 @@ import 'form.dart';
 import 'package:flutter/foundation.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'src/sign_in_button.dart';
-import 'package:ensemble_ts_interpreter/parser/newjs_interpreter.dart';
+//import 'package:ensemble_ts_interpreter/parser/newjs_interpreter.dart';
 
 
 /// The type of the onClick callback for the (mobile) Sign In Button.
@@ -26,6 +26,7 @@ void main() {
 
 
 test()  {
+  /*
 Map<String, dynamic> context = {
   'age': 9,
 };
@@ -33,8 +34,8 @@ Map<String, dynamic> context = {
 String code = """
       age = age + 1;
     """;
-
-JSInterpreter.fromCode(code, context).evaluate();
+*/
+//JSInterpreter.fromCode(code, context).evaluate();
 //print ("calcul age");
 //print (context['age']);
 }
@@ -49,8 +50,6 @@ const List<String> scopes = <String>[
 ];
 
 GoogleSignIn _googleSignIn = GoogleSignIn(
-  // Optional clientId
-  clientId: '114273143423-v83roghb06tj7c9tkjpap51b141s1mlq.apps.googleusercontent.com',
   scopes: scopes,
 );
 
@@ -72,9 +71,20 @@ class _FirstRouteState extends State<FirstRoute> {
   late FormStore store;
   bool _isAuthorized = false; // has granted permissions?
 
+
+
   @override
   void initState() {
     super.initState();
+
+    if( kIsWeb) {
+      _googleSignIn = GoogleSignIn(
+        // Optional clientId
+        clientId: '114273143423-v83roghb06tj7c9tkjpap51b141s1mlq.apps.googleusercontent.com',
+        scopes: scopes,
+      );
+    }
+
 
     _googleSignIn.onCurrentUserChanged
         .listen((GoogleSignInAccount? account) async {
