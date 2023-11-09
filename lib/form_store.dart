@@ -191,9 +191,10 @@ class FormStore {
         }
       }
     }
-
-
-    final authenticateClient = await obtainServiceCredentials();
+    final authHeaders = await account.authHeaders;
+    final authenticateClient = GoogleAuthClient(authHeaders);
+    // Fonctionne avec l'utilisation d'un compte de service
+    //final authenticateClient = await obtainServiceCredentials();
     final driveApi = drive.DriveApi(authenticateClient);
 
 
