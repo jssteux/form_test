@@ -66,7 +66,7 @@ class MyCustomFormState extends State<MyCustomForm> {
             return null;
           },
           decoration:  InputDecoration(
-              labelText: label//label text of field
+              labelText: columDescriptor.label//label text of field
           )
 
       );
@@ -125,7 +125,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
                   ])),
 
-              labelText: "Enter Date" //label text of field
+              labelText: columDescriptor.label //label text of field
           ),
           //readOnly: true, // when true user cannot edit text
           validator: (value) {
@@ -145,7 +145,10 @@ class MyCustomFormState extends State<MyCustomForm> {
       if (kIsWeb) {
         return CustomImageFormFieldWeb(
                 (value) => files[formIndex.toString()] = value!,
-            files[formIndex.toString()]);
+
+            files[formIndex.toString()],
+            columDescriptor.label
+        );
       } else {
 
             return CustomImageFormField(
@@ -157,6 +160,7 @@ class MyCustomFormState extends State<MyCustomForm> {
             },
             widget.store,
             files[formIndex.toString()],
+              columDescriptor.label,
             validator: (value) {
 
               if (value == null || value.content == null) {
@@ -174,19 +178,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
       }
     } else {
-      var myController = TextEditingController(text: initialValues[columnName]);
-      controllers.putIfAbsent(columnName, () => myController);
-      var textField = TextFormField(
-        controller: myController,
-        // The validator receives the text that the user has entered.
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter some text';
-          }
-          return null;
-        },
-      );
-      return textField;
+       return const Text("");
     }
   }
 

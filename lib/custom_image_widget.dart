@@ -11,13 +11,14 @@ class CustomImageFormField extends FormField<CustomImageState?> {
 
 
   final FormStore store;
+  final String label;
 
 
 
   CustomImageFormField(FormFieldSetter<CustomImageState> onSaved,
       this.store,
       CustomImageState? initialValue,
-
+      this.label,
 
       {super.key, super.validator,super.autovalidateMode}) : super(
       onSaved: onSaved,
@@ -63,7 +64,7 @@ class CustomImageFormField extends FormField<CustomImageState?> {
               ),
 
             ])),
-            labelText: "Image", //label text of field
+            labelText: label, //label text of field
 
             errorText: formFieldState.errorText
 

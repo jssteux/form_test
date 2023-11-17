@@ -7,8 +7,10 @@ import 'package:form_test/custom_image_state.dart';
 
 class CustomImageFormFieldWeb extends FormField<CustomImageState?> {
 
+  final String label;
+
   CustomImageFormFieldWeb(FormFieldSetter<CustomImageState> onSaved,
-      CustomImageState? initialValue, {super.key}) : super(
+      CustomImageState? initialValue,  this.label, {super.key}) : super(
       onSaved: onSaved,
       initialValue: initialValue,
       builder: (formFieldState) {
