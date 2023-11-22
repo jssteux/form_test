@@ -4,6 +4,8 @@ import 'package:form_test/main.dart';
 import 'package:form_test/sheet.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
 
+import 'column_descriptor.dart';
+
 // Define a custom Form widget.
 class MyCustomList extends StatefulWidget {
   const MyCustomList(this.store, {super.key});
@@ -24,6 +26,7 @@ class MyCustomListState extends State<MyCustomList> {
   late ScrollController _scrollController;
   double initialScrollOffset = 0;
   late List<Map<String, String>> _items;
+  late DatasSheet sheet;
   Key _refreshKey = UniqueKey();
 
   Widget _comp(int index) {
@@ -31,11 +34,7 @@ class MyCustomListState extends State<MyCustomList> {
     var current = index;
     return GestureDetector(
         child: ListTile(
-            title: Row(children: <Widget>[
-      Expanded(child: Text(_items.elementAt(index)['NOM']!)),
-      Expanded(child: Text(_items.elementAt(index)['PRENOM']!)),
-      Expanded(child: Text(_items.elementAt(index)['DATE_NAISSANCE']!)),
-    ])),
+            title: Row(children: buildInnerWidgets( index))),
     onTap: () {
       initialScrollOffset = _scrollController.offset;
       //print('offset :$initialScrollOffset' );
@@ -56,7 +55,7 @@ class MyCustomListState extends State<MyCustomList> {
 */
   }
 
-  List<Widget> buildWidgets() {
+  List<Widget> buildLines() {
     List<Widget> widgets = [];
 
     for (int i = 0; i < _items.length; i++) {
@@ -65,6 +64,32 @@ class MyCustomListState extends State<MyCustomList> {
     return widgets;
   }
 
+  List<Widget> buildInnerWidgets( int index) {
+    List<Widget> widgets = [];
+
+    for (int i = 0; i < sheet.form.columns.length; i++) {
+      String columName = sheet.form.columns[i];
+      widgets.add(Expanded(child: Text(_items.elementAt(index)[columName]!)));
+    }
+    return widgets;
+  }
+
+
+  List<Widget> buildTitles() {
+    List<Widget> widgets = [];
+
+    for (int i = 0; i < sheet.form.columns.length; i++) {
+      String columName = sheet.form.columns[i];
+      ColumnDescriptor? columDesc = sheet.columns[columName];
+      if (columDesc != null) {
+        String label = columDesc.label;
+        widgets.add(Expanded(
+            child: Text(label,
+                style: const TextStyle(fontWeight: FontWeight.bold))),);
+      }
+    }
+    return widgets;
+  }
 
 
   @override
@@ -77,21 +102,12 @@ class MyCustomListState extends State<MyCustomList> {
         builder: (context, AsyncSnapshot<DatasSheet> snapshot) {
           if (snapshot.hasData) {
             _items = snapshot.data!.datas;
+            sheet = snapshot.data!;
             _scrollController = ScrollController(initialScrollOffset: initialScrollOffset);
             return Form(
                 child: Column(children: <Widget>[
-              const ListTile(
-                  title: Row(children: <Widget>[
-                Expanded(
-                    child: Text("nom",
-                        style: TextStyle(fontWeight: FontWeight.bold))),
-                Expanded(
-                    child: Text("prenom",
-                        style: TextStyle(fontWeight: FontWeight.bold))),
-                Expanded(
-                    child: Text("date naissance",
-                        style: TextStyle(fontWeight: FontWeight.bold))),
-              ])),
+               ListTile(
+                  title: Row(children: buildTitles())),
               Expanded(
                   child: VsScrollbar(
                 controller: _scrollController,
@@ -117,7 +133,7 @@ class MyCustomListState extends State<MyCustomList> {
                   key: Key(_items.length.toString()),
                   controller: _scrollController,
                   child: Column(
-                    children: buildWidgets(),
+                    children: buildLines(),
                   ),
                 ),
               ))

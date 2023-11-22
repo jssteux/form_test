@@ -182,7 +182,7 @@ class MyCustomFormState extends State<MyCustomForm> {
     }
   }
 
-  List<Widget> buildWidgets() {
+  List<Widget>  buildWidgets() {
     List<Widget> widgets = [];
     for (int i = 0; i < columns.length; i++) {
       widgets.add(_row(i));

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/custom_image_state.dart';
+import 'package:form_test/form_descriptor.dart';
 import 'package:form_test/logger.dart';
 import 'package:form_test/main.dart';
 import 'package:form_test/src/parser/parser.dart';
@@ -306,9 +307,26 @@ class FormStore {
 
 
 
+
   Future<LinkedHashMap<String, ColumnDescriptor>?> loadDescriptor(
       String sheetName) async {
-    final authHeaders = await account.authHeaders;
+    List<dynamic> rows = await getMetadatas();
+
+    return parser.parseDescriptor(sheetName, rows);
+
+  }
+
+  Future<FormDescriptor?> loadForm(
+      String sheetName) async {
+    List<dynamic> rows = await getMetadatas();
+
+    return parser.parseForm(sheetName, rows);
+
+  }
+
+
+  Future<List<dynamic>> getMetadatas() async {
+      final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
@@ -323,10 +341,11 @@ class FormStore {
 
     final data = jsonDecode(response.body.toString());
     final List<dynamic> rows = data['values'];
-
-    return parser.parseDescriptor(sheetName, rows);
-
+    return rows;
   }
+
+
+
 
   Future<DatasSheet> loadData() async {
     logger.logEvent("loadDatas A APPROFONDIR");
@@ -364,9 +383,9 @@ class FormStore {
     }
 
     LinkedHashMap<String, ColumnDescriptor>? columns =  await loadDescriptor("CLIENT");
+    FormDescriptor? form =  await loadForm("CLIENT");
 
-
-    return DatasSheet(res, columns!);
+    return DatasSheet(res, columns!, form!);
     //return  [ Map.unmodifiable({'NOM':'Le rouzic'}), Map.unmodifiable({'NOM':'STEUX'}) ];
   }
 

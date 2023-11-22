@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:form_test/column_descriptor.dart';
+import 'package:form_test/form_descriptor.dart';
 import 'package:form_test/src/parser/parser_context.dart';
 import 'package:form_test/src/parser/parser_level.dart';
 import 'package:form_test/src/parser/parser_property.dart';
@@ -156,5 +157,86 @@ class Parser {
       return null;
     }
   }
+
+
+  FormDescriptor? parseForm(String sheetName, List<dynamic> rows) {
+
+    FormDescriptor? desc;
+    List<dynamic> elements = [];
+
+    ParserContext ctx = const ParserContext(-1, 0);
+
+    // Loop over rows
+    while ( ctx.index < rows.length) {
+      int index = ctx.index;
+      ctx =  parse(elements, rows, index, -1);
+    }
+
+    bool found = false;
+
+    // parse results
+    for ( var element in elements){
+      if( element is ParserLevel) {
+        if(element.name == "FORM")  {
+          for ( var subStep in element.children)  {
+            if( subStep is ParserProperty)  {
+              if (subStep.name == "SHEET" && subStep.value == sheetName) {
+                found = true;
+              }
+            }
+
+
+          }
+          // Sheet found
+          if( found)  {
+
+
+            List<String> columns = [];
+            String label = sheetName;
+
+            for ( var subStep in element.children)  {
+
+              if( subStep is ParserProperty)  {
+                if (subStep.name == "LABEL" && subStep.value == sheetName) {
+                  label = subStep.value;
+                }
+              }
+
+
+
+              if( subStep is ParserLevel)  {
+                if (subStep.name == "COLUMN") {
+                  //print('foudn coulmn');
+                  String? name;
+                  String label = "";
+
+                  for( var propertySheet in subStep.children)  {
+                    if( propertySheet is ParserProperty)  {
+                      if(propertySheet.name == "NAME") {
+                        name = propertySheet.value;
+                      }
+
+                    }
+                  }
+
+                  if(name != null) {
+                    columns.add(name);
+                  }
+                }
+              }
+            }
+
+            desc = FormDescriptor(sheetName, label, columns);
+          }
+        }
+
+      }
+    }
+
+      return desc;
+
+  }
+
+
 
 }
