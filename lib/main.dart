@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:form_test/form_descriptor.dart';
 import 'package:form_test/list.dart';
 import 'package:form_test/logger.dart';
 
@@ -75,7 +76,7 @@ class _FirstRouteState extends State<FirstRoute> {
   late FormStore store;
   bool _isAuthorized = false; // has granted permissions?
   Logger logger = Logger();
-
+  late List<FormDescriptor>? forms;
 
   @override
   void initState() {
@@ -98,16 +99,21 @@ class _FirstRouteState extends State<FirstRoute> {
         isAuthorized = await _googleSignIn.canAccessScopes(scopes);
       }
 
+      // Now that we know that the user can access the required scopes, the app
+      // can call the REST API.
+
+
+      if (isAuthorized) {
+        store = FormStore(account!, logger);
+        forms = await store.getForms();
+      }
+
       setState(() {
         _account = account;
         _isAuthorized = isAuthorized;
       });
 
-      // Now that we know that the user can access the required scopes, the app
-      // can call the REST API.
-      if (isAuthorized) {
-        store = FormStore(account!, logger);
-      }
+
     });
 
     // In the web, _googleSignIn.signInSilently() triggers the One Tap UX.
@@ -150,6 +156,7 @@ class _FirstRouteState extends State<FirstRoute> {
     });
     if (isAuthorized) {
       store = FormStore(_account!, logger);
+      forms = await store.getForms();
     }
   }
 
@@ -179,15 +186,7 @@ class _FirstRouteState extends State<FirstRoute> {
                   MaterialPageRoute(builder: (context) => FormRoute(store, -1)),
                 );
               },
-            ),ElevatedButton(
-              child: const Text('Liste'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ListRoute(store)),
-                );
-              },
-            )
+            ),Column( children :getForms())
           ],
           if (!_isAuthorized) ...<Widget>[
             // The user has NOT Authorized all required scopes.
@@ -225,6 +224,26 @@ class _FirstRouteState extends State<FirstRoute> {
         ],
       );
     }
+  }
+
+  List<Widget> getForms()  {
+    List<Widget> widgets = [];
+
+    if( forms != null) {
+      for(int formIndex = 0; formIndex< forms!.length; formIndex++)  {
+        FormDescriptor form = forms![formIndex];
+        widgets.add(ElevatedButton(
+          child: Text(form.label),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ListRoute(store, formIndex, form.label)),
+            );
+          },
+        ));
+      }
+    }
+    return widgets;
   }
 
 
@@ -267,17 +286,19 @@ class FormRoute extends StatelessWidget {
 
 class ListRoute extends StatelessWidget {
   final FormStore store;
+  final String label;
+  final int formIndex;
 
-  const ListRoute(  this.store, {super.key });
+  const ListRoute(  this.store, this.formIndex, this.label, {super.key });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Liste'),
+        title: Text(label),
       ),
       body: Center(
-            child:  MyCustomList( store)
+            child:  MyCustomList( store, formIndex)
 
       ),
     );

@@ -211,7 +211,7 @@ class FormStore {
       */
 
     // Reload datas
-    DatasSheet sheet = await loadData();
+    SheetDatas sheet = await loadDatas("CLIENT");
 
     // Search current item
     var index = -1;
@@ -316,13 +316,15 @@ class FormStore {
 
   }
 
-  Future<FormDescriptor?> loadForm(
-      String sheetName) async {
+
+
+  Future<List<FormDescriptor>> getForms() async {
     List<dynamic> rows = await getMetadatas();
-
-    return parser.parseForm(sheetName, rows);
-
+    List<FormDescriptor> forms = parser.parseForms( rows);
+    print("forms ${forms.length}");
+    return forms;
   }
+
 
 
   Future<List<dynamic>> getMetadatas() async {
@@ -345,11 +347,7 @@ class FormStore {
   }
 
 
-
-
-  Future<DatasSheet> loadData() async {
-    logger.logEvent("loadDatas A APPROFONDIR");
-
+  Future<SheetDatas> loadDatas  ( String sheetName) async {
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -357,7 +355,7 @@ class FormStore {
 
     String? sheetFileId = await getSheetFileId(driveApi);
 
-    final encodedRange = Uri.encodeComponent("CLIENT!A1:E1000");
+    final encodedRange = Uri.encodeComponent("$sheetName!A1:E1000");
 
     String uri = '$_sheetsEndpoint$sheetFileId/values/$encodedRange';
 
@@ -382,15 +380,35 @@ class FormStore {
       res.add(rowMap);
     }
 
-    LinkedHashMap<String, ColumnDescriptor>? columns =  await loadDescriptor("CLIENT");
-    FormDescriptor? form =  await loadForm("CLIENT");
+    LinkedHashMap<String, ColumnDescriptor>? columns = await loadDescriptor(
+        sheetName);
 
-    return DatasSheet(res, columns!, form!);
+    return SheetDatas(res, columns!);
+  }
+
+
+  Future<FormDatas> loadForm( int formIndex) async {
+    logger.logEvent("loadDatas A APPROFONDIR");
+
+
+    List<FormDescriptor> forms = await getForms();
+    FormDescriptor form = forms[ formIndex];
+    String sheetName = form.sheetName;
+
+    SheetDatas datas = await loadDatas(sheetName);
+
+    return FormDatas(datas.datas, datas.columns, form);
     //return  [ Map.unmodifiable({'NOM':'Le rouzic'}), Map.unmodifiable({'NOM':'STEUX'}) ];
   }
 
+
+
+
+
+
+
   Future<DatasRow> loadRow(int index) async {
-    DatasSheet sheet = await loadData();
+    SheetDatas sheet = await loadDatas("CLIENT");
     Map<String, String> rowDatas = {};
     if (index != -1) {
       rowDatas = sheet.datas[index];

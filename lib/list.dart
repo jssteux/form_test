@@ -8,9 +8,10 @@ import 'column_descriptor.dart';
 
 // Define a custom Form widget.
 class MyCustomList extends StatefulWidget {
-  const MyCustomList(this.store, {super.key});
+  const MyCustomList(this.store, this.formIndex, {super.key});
 
   final FormStore store;
+  final int formIndex;
 
   @override
   MyCustomListState createState() {
@@ -26,7 +27,7 @@ class MyCustomListState extends State<MyCustomList> {
   late ScrollController _scrollController;
   double initialScrollOffset = 0;
   late List<Map<String, String>> _items;
-  late DatasSheet sheet;
+  late FormDatas sheet;
   Key _refreshKey = UniqueKey();
 
   Widget _comp(int index) {
@@ -96,10 +97,10 @@ class MyCustomListState extends State<MyCustomList> {
   Widget build(BuildContext context) {
     // Build a Form widget using the _formKey created above.
 
-    return FutureBuilder<DatasSheet>(
+    return FutureBuilder<FormDatas>(
         key: _refreshKey,
-        future: widget.store.loadData(),
-        builder: (context, AsyncSnapshot<DatasSheet> snapshot) {
+        future: widget.store.loadForm(widget.formIndex),
+        builder: (context, AsyncSnapshot<FormDatas> snapshot) {
           if (snapshot.hasData) {
             _items = snapshot.data!.datas;
             sheet = snapshot.data!;

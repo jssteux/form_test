@@ -159,9 +159,10 @@ class Parser {
   }
 
 
-  FormDescriptor? parseForm(String sheetName, List<dynamic> rows) {
+  List<FormDescriptor>  parseForms( List<dynamic> rows) {
 
-    FormDescriptor? desc;
+    List<FormDescriptor> forms = [];
+    
     List<dynamic> elements = [];
 
     ParserContext ctx = const ParserContext(-1, 0);
@@ -172,44 +173,30 @@ class Parser {
       ctx =  parse(elements, rows, index, -1);
     }
 
-    bool found = false;
+    
 
     // parse results
     for ( var element in elements){
       if( element is ParserLevel) {
         if(element.name == "FORM")  {
-          for ( var subStep in element.children)  {
-            if( subStep is ParserProperty)  {
-              if (subStep.name == "SHEET" && subStep.value == sheetName) {
-                found = true;
-              }
-            }
-
-
-          }
-          // Sheet found
-          if( found)  {
-
-
             List<String> columns = [];
-            String label = sheetName;
+            String label = "";
+            String sheetName = "";
 
             for ( var subStep in element.children)  {
 
               if( subStep is ParserProperty)  {
-                if (subStep.name == "LABEL" && subStep.value == sheetName) {
+                if (subStep.name == "SHEET" ) {
+                  sheetName = subStep.value;
+                }
+                if (subStep.name == "LABEL" ) {
                   label = subStep.value;
                 }
               }
 
-
-
               if( subStep is ParserLevel)  {
                 if (subStep.name == "COLUMN") {
-                  //print('foudn coulmn');
                   String? name;
-                  String label = "";
-
                   for( var propertySheet in subStep.children)  {
                     if( propertySheet is ParserProperty)  {
                       if(propertySheet.name == "NAME") {
@@ -226,14 +213,14 @@ class Parser {
               }
             }
 
-            desc = FormDescriptor(sheetName, label, columns);
+            forms.add(FormDescriptor(sheetName, label, columns));
           }
         }
 
       }
-    }
 
-      return desc;
+
+      return forms;
 
   }
 
