@@ -49,7 +49,6 @@ class MyCustomFormState extends State<MyCustomForm> {
   Widget _comp(int formIndex) {
     String columnName = columns.keys.elementAt(formIndex);
     ColumnDescriptor columDescriptor = columns[columnName]!;
-    String label = formIndex.toString();
 
     if (columDescriptor.type == "STRING") {
       var myController = TextEditingController(text: initialValues[columnName]);
