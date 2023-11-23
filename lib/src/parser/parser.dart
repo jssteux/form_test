@@ -103,7 +103,7 @@ class Parser {
 
     // parse results
     for ( var element in elements){
-      if( element is ParserLevel) {
+      if( found == false && element is ParserLevel) {
         if(element.name == "SHEET")  {
           for ( var subStep in element.children)  {
             if( subStep is ParserProperty)  {
