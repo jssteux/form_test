@@ -178,15 +178,7 @@ class _FirstRouteState extends State<FirstRoute> {
           ),
           const Text('Signed in successfully.'),
           if (_isAuthorized) ...<Widget>[
-              ElevatedButton(
-              child: const Text('Mon formulaire'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => FormRoute(store, -1)),
-                );
-              },
-            ),Column( children :getForms())
+            Column( children :getForms())
           ],
           if (!_isAuthorized) ...<Widget>[
             // The user has NOT Authorized all required scopes.
@@ -265,9 +257,10 @@ class _FirstRouteState extends State<FirstRoute> {
 
 class FormRoute extends StatelessWidget {
   final FormStore store;
+  final String sheetName;
   final int index;
 
-   const FormRoute(  this.store, this.index, {super.key });
+   const FormRoute(  this.store, this.sheetName, this.index, {super.key });
 
   @override
   Widget build(BuildContext context) {
@@ -276,7 +269,7 @@ class FormRoute extends StatelessWidget {
         title: const Text('Formulaire saisie'),
       ),
       body: Center(
-          child:  MyCustomForm( store, index)
+          child:  MyCustomForm( store, sheetName, index)
         ),
 
     );

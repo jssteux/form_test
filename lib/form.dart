@@ -12,8 +12,9 @@ import 'custom_image_widget_web.dart';
 
 // Define a custom Form widget.
 class MyCustomForm extends StatefulWidget {
-  const MyCustomForm(this.store, this.index, {super.key});
+  const MyCustomForm(this.store, this.sheetName, this.index, {super.key});
   final FormStore store;
+  final String sheetName;
   final int index;
 
   @override
@@ -194,7 +195,7 @@ class MyCustomFormState extends State<MyCustomForm> {
     //print('build');
     // Build a Form widget using the _formKey created above.
     return FutureBuilder<DatasRow>(
-        future: widget.store.loadRow(widget.index),
+        future: widget.store.loadRow(widget.sheetName, widget.index),
         builder: (context, AsyncSnapshot<DatasRow> snapshot) {
           if (snapshot.hasData) {
             columns = snapshot.data!.columns;
@@ -256,10 +257,11 @@ class MyCustomFormState extends State<MyCustomForm> {
                                 }
 
                                 widget.store.saveData(
-                                    context, formValues, columns, files);
+                                    context, widget.sheetName,formValues, columns, files);
                               }
                             },
-                            child: const Text('Submit2'),
+
+                            child: const Text('Validate'),
                           )
                         ])));
           } else {

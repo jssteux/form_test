@@ -41,7 +41,7 @@ class MyCustomListState extends State<MyCustomList> {
       //print('offset :$initialScrollOffset' );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => FormRoute(widget.store, current)),
+        MaterialPageRoute(builder: (context) => FormRoute(widget.store, sheet.form.sheetName, current)),
       ).then((value) =>
             setState( (){ if(value == true) {
               _refreshKey = UniqueKey();} })); }
@@ -106,7 +106,7 @@ class MyCustomListState extends State<MyCustomList> {
             sheet = snapshot.data!;
             _scrollController = ScrollController(initialScrollOffset: initialScrollOffset);
             return Form(
-                child: Column(children: <Widget>[
+                child: Scaffold( body :Column(children: <Widget>[
                ListTile(
                   title: Row(children: buildTitles())),
               Expanded(
@@ -138,7 +138,24 @@ class MyCustomListState extends State<MyCustomList> {
                   ),
                 ),
               ))
-            ]));
+            ]),
+                    bottomNavigationBar: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => FormRoute(widget.store, sheet.form.sheetName, -1)),
+                          ).then((value) =>
+                              setState( (){ if(value == true) {
+                                _refreshKey = UniqueKey();} }));
+                        },
+                        child: const Text('Add'),
+                      )
+                    ])
+
+                ));
           } else {
             return const CircularProgressIndicator();
           }

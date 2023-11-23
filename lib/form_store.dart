@@ -156,6 +156,7 @@ class FormStore {
 
   saveData(
       BuildContext context,
+      String sheetName,
       Map<String, String> formValues,
       LinkedHashMap<String, ColumnDescriptor> columns,
       Map<String, CustomImageState> files) async {
@@ -199,7 +200,7 @@ class FormStore {
     //search main
     String? sheetFileId = await getSheetFileId(driveApi);
 
-    String encodedRange = Uri.encodeComponent("CLIENT!A1:D1");
+    String encodedRange = Uri.encodeComponent("$sheetName!A1:D1");
 
     String uri;
     String range = "";
@@ -211,7 +212,7 @@ class FormStore {
       */
 
     // Reload datas
-    SheetDatas sheet = await loadDatas("CLIENT");
+    SheetDatas sheet = await loadDatas(sheetName);
 
     // Search current item
     var index = -1;
@@ -258,7 +259,7 @@ class FormStore {
     String lastColumn = String.fromCharCode(65 + nbColumns - 1);
 
     if (index == -1) {
-      range = 'CLIENT!A1:$lastColumn' '1';
+      range = '$sheetName!A1:$lastColumn' '1';
       encodedRange = Uri.encodeComponent(range);
       uri =
           '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW';
@@ -276,7 +277,7 @@ class FormStore {
       );
     } else {
       int indexInsertion = index + 2;
-      range = "CLIENT!A$indexInsertion:$lastColumn$indexInsertion";
+      range = "$sheetName!A$indexInsertion:$lastColumn$indexInsertion";
 
       encodedRange = Uri.encodeComponent(range);
 
@@ -321,7 +322,7 @@ class FormStore {
   Future<List<FormDescriptor>> getForms() async {
     List<dynamic> rows = await getMetadatas();
     List<FormDescriptor> forms = parser.parseForms( rows);
-    print("forms ${forms.length}");
+    //print("forms ${forms.length}");
     return forms;
   }
 
@@ -407,8 +408,8 @@ class FormStore {
 
 
 
-  Future<DatasRow> loadRow(int index) async {
-    SheetDatas sheet = await loadDatas("CLIENT");
+  Future<DatasRow> loadRow(String sheetName, int index) async {
+    SheetDatas sheet = await loadDatas(sheetName);
     Map<String, String> rowDatas = {};
     if (index != -1) {
       rowDatas = sheet.datas[index];
