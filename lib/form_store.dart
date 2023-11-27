@@ -8,6 +8,7 @@ import 'package:form_test/custom_image_state.dart';
 import 'package:form_test/form_descriptor.dart';
 import 'package:form_test/logger.dart';
 import 'package:form_test/main.dart';
+import 'package:form_test/src/filters/filter_parser.dart';
 import 'package:form_test/src/parser/parser.dart';
 import 'package:form_test/row.dart';
 import 'package:form_test/sheet.dart';
@@ -398,8 +399,35 @@ class FormStore {
 
     SheetDatas datas = await loadDatas(sheetName);
 
+/*
+    List<Map<String,String>> filterDatas = [];
+    for (int i = 0; i< datas.datas.length; i++) {
+
+    }
+*/
+
+
+
+  print('before parse');
+
+  try {
+    var ast = filter_parser
+        .parse("(x > 't' ) OR ( y > 't') ")
+        .value;
+
+    print('after parse');
+
+    var res = ast.eval({'x': 'tabani', 'y': 'teux'});
+    print('res='+res.toString());
+
+  } on Exception catch(e) {
+    print('Unknown exception: $e');
+  }
+
+
+
+
     return FormDatas(datas.datas, datas.columns, form);
-    //return  [ Map.unmodifiable({'NOM':'Le rouzic'}), Map.unmodifiable({'NOM':'STEUX'}) ];
   }
 
 
