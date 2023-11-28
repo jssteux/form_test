@@ -399,14 +399,33 @@ class FormStore {
 
     SheetDatas datas = await loadDatas(sheetName);
 
+
+
+
+
+      List<FilteredLine> filteredLines = [];
+      for (int i = 0; i < datas.datas.length; i++) {
+        bool insert = false;
+        if( form.condition.isNotEmpty) {
+          var ast = filter_parser
+              .parse(form.condition)
+              .value;
+
+          var res = ast.eval({'NOM': datas.datas[i]['NOM']});
+          insert = res;
+        } else {
+          insert = true;
+        }
+
+        if( insert)  {
+          filteredLines.add(FilteredLine(datas.datas[i],i));
+        }
+      }
+      return FormDatas(filteredLines, datas.columns, form);
+
+
+
 /*
-    List<Map<String,String>> filterDatas = [];
-    for (int i = 0; i< datas.datas.length; i++) {
-
-    }
-*/
-
-
 
   print('before parse');
 
@@ -423,11 +442,8 @@ class FormStore {
   } on Exception catch(e) {
     print('Unknown exception: $e');
   }
+*/
 
-
-
-
-    return FormDatas(datas.datas, datas.columns, form);
   }
 
 

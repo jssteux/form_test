@@ -123,6 +123,8 @@ class Parser {
                   String? name;
                   String type = "STRING";
                   String label = "";
+                  String reference = "";
+                  bool   mandatory = false;
 
                   for( var propertySheet in subStep.children)  {
                     if( propertySheet is ParserProperty)  {
@@ -135,12 +137,20 @@ class Parser {
                       if(propertySheet.name == "LABEL") {
                         label = propertySheet.value;
                       }
+                      if(propertySheet.name == "REFERENCE") {
+                        reference = propertySheet.value;
+                      }
+                      if(propertySheet.name == "MANDATORY") {
+                        if( "TRUE" == propertySheet.value)  {
+                          mandatory = true;
+                        }
+                      }
                     }
                   }
 
                   if(name != null) {
                     desc.putIfAbsent(
-                        name, () => ColumnDescriptor(name!,type, label));
+                        name, () => ColumnDescriptor(name!,type, label, reference, mandatory));
                     //print('add column$name $type');
                   }
                 }
@@ -182,6 +192,7 @@ class Parser {
             List<String> columns = [];
             String label = "";
             String sheetName = "";
+            String condition = "";
 
             for ( var subStep in element.children)  {
 
@@ -191,6 +202,9 @@ class Parser {
                 }
                 if (subStep.name == "LABEL" ) {
                   label = subStep.value;
+                }
+                if (subStep.name == "CONDITION" ) {
+                  condition = subStep.value;
                 }
               }
 
@@ -213,7 +227,7 @@ class Parser {
               }
             }
 
-            forms.add(FormDescriptor(sheetName, label, columns));
+            forms.add(FormDescriptor(sheetName, label, condition, columns));
           }
         }
 

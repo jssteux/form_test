@@ -93,7 +93,7 @@ class SupBinary extends Expression {
 
     if( leftE is String && righE is String) {
       print('eval $leftE $righE');
-      return leftE.compareTo(righE) > 0;
+      return leftE.toUpperCase().compareTo(righE.toUpperCase()) > 0;
     } else  {
       return false;
     }

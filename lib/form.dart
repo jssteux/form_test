@@ -9,6 +9,7 @@ import 'package:form_test/row.dart';
 import 'package:intl/intl.dart';
 import 'custom_image_widget.dart';
 import 'custom_image_widget_web.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 // Define a custom Form widget.
 class MyCustomForm extends StatefulWidget {
@@ -36,6 +37,7 @@ class MyCustomFormState extends State<MyCustomForm> {
   late Map<String, CustomImageState> files;
   late bool autofocusInit;
   late LinkedHashMap<String, ColumnDescriptor> columns;
+  Map<String, String> referencesValues = {};
 
   final _formKey = GlobalKey<FormState>();
 
@@ -51,7 +53,42 @@ class MyCustomFormState extends State<MyCustomForm> {
     String columnName = columns.keys.elementAt(formIndex);
     ColumnDescriptor columDescriptor = columns[columnName]!;
 
-    if (columDescriptor.type == "STRING") {
+    if (columDescriptor.reference.isNotEmpty) {
+      var myController = TextEditingController(text: initialValues[columnName]!+ "XXXXXORIGINALXXXXXXXX");
+      controllers.putIfAbsent(columnName, () => myController);
+      return TypeAheadFormField (
+        textFieldConfiguration: TextFieldConfiguration(
+            controller: myController,
+            decoration:  InputDecoration(
+                labelText: columDescriptor.label//label text of field
+            )
+        ),
+        suggestionsCallback: (pattern) async {
+          // Replace with your backend call to get suggestions
+          List<String> suggestions = ["1111","2222"];
+          return suggestions;
+        },
+        itemBuilder: (context, suggestion) {
+          // Customize each suggestion item here
+          return ListTile(
+            title: Text(suggestion + "XXXXXXXXXX"),
+          );
+        },
+        onSuggestionSelected: (suggestion) {
+          // Handle the user's selection
+          myController.text = suggestion + "XXXXXXXX";
+          referencesValues[columnName] = suggestion;
+        },
+        onSuggestionsBoxToggle: (isOpen) {
+          // Restore original value
+          if( isOpen == false)  {myController.text = referencesValues[columnName]! + "XXXXXORIGINALXXXXXXXX";}
+          if( isOpen == true)   {myController.text = "";}
+          },
+
+          animationDuration: const Duration(milliseconds: 0)
+
+      );
+    } else if (columDescriptor.type == "STRING") {
       var myController = TextEditingController(text: initialValues[columnName]);
       controllers.putIfAbsent(columnName, () => myController);
       var textField = TextFormField(
@@ -59,8 +96,10 @@ class MyCustomFormState extends State<MyCustomForm> {
           // The validator receives the text that the user has entered.
           validator: (value) {
             if( formIndex == 1) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter some text';
+              if( columDescriptor.mandatory) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter some text';
+                }
               }
             }
             return null;
@@ -129,12 +168,13 @@ class MyCustomFormState extends State<MyCustomForm> {
           ),
           //readOnly: true, // when true user cannot edit text
           validator: (value) {
-
-            if (value == null || value.isEmpty) {
-              return 'Please enter some text';
-            } else {
-              try {} catch (e) {
-                return 'incorrect date format';
+            if( columDescriptor.mandatory) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter some text';
+              } else {
+                try {} catch (e) {
+                  return 'incorrect date format';
+                }
               }
             }
             return null;
@@ -147,7 +187,8 @@ class MyCustomFormState extends State<MyCustomForm> {
                 (value) => files[formIndex.toString()] = value!,
 
             files[formIndex.toString()],
-            columDescriptor.label
+            columDescriptor.label,
+
         );
       } else {
 
@@ -163,11 +204,13 @@ class MyCustomFormState extends State<MyCustomForm> {
               columDescriptor.label,
             validator: (value) {
 
-              if (value == null || value.content == null) {
-                return 'Please enter a picture';
-              } else {
-                try {} catch (e) {
-                  return 'incorrect date format';
+              if( columDescriptor.mandatory) {
+                if (value == null || value.content == null) {
+                  return 'Please enter a picture';
+                } else {
+                  try {} catch (e) {
+                    return 'incorrect date format';
+                  }
                 }
               }
 
@@ -208,7 +251,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
             return Form(
                 key: _formKey,
-                child: Scaffold(
+                child: GestureDetector(    onTap: () => FocusManager.instance.primaryFocus?.unfocus(), child: Scaffold(
                     body: SingleChildScrollView(
                       controller: _scrollController,
                       child: Column(
@@ -232,6 +275,8 @@ class MyCustomFormState extends State<MyCustomForm> {
                                 _formKey.currentState!.save();
 
                                 Map<String, String> formValues = {};
+
+
                                 if (initialValues["ID"] != null) {
                                   formValues.putIfAbsent(
                                       "ID", () => initialValues["ID"]!);
@@ -242,13 +287,14 @@ class MyCustomFormState extends State<MyCustomForm> {
                                   ColumnDescriptor columDescriptor =
                                   columns[columnName]!;
 
-                                  if (columDescriptor.type == "STRING" ||
+                                  if (columDescriptor.reference.isNotEmpty) {
+                                    formValues.putIfAbsent(columnName,
+                                            () => referencesValues[columnName]!);
+                                  } else  if (columDescriptor.type == "STRING" ||
                                       columDescriptor.type == "DATE") {
                                     formValues.putIfAbsent(columnName,
                                             () => controllers[columnName]!.text);
-                                  }
-
-                                  if (columDescriptor.type == "GOOGLE_IMAGE") {
+                                  } else if (columDescriptor.type == "GOOGLE_IMAGE") {
                                     if (initialValues[columnName] != null) {
                                       formValues.putIfAbsent(columnName,
                                               () => initialValues[columnName]!);
@@ -263,7 +309,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
                             child: const Text('Validate'),
                           )
-                        ])));
+                        ]))));
           } else {
             return const CircularProgressIndicator();
           }

@@ -26,7 +26,7 @@ class MyCustomList extends StatefulWidget {
 class MyCustomListState extends State<MyCustomList> {
   late ScrollController _scrollController;
   double initialScrollOffset = 0;
-  late List<Map<String, String>> _items;
+  late List<FilteredLine> _items;
   late FormDatas sheet;
   Key _refreshKey = UniqueKey();
 
@@ -41,7 +41,7 @@ class MyCustomListState extends State<MyCustomList> {
       //print('offset :$initialScrollOffset' );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => FormRoute(widget.store, sheet.form.sheetName, current)),
+        MaterialPageRoute(builder: (context) => FormRoute(widget.store, sheet.form.sheetName, sheet.lines[current].originalIndex)),
       ).then((value) =>
             setState( (){ if(value == true) {
               _refreshKey = UniqueKey();} })); }
@@ -70,7 +70,7 @@ class MyCustomListState extends State<MyCustomList> {
 
     for (int i = 0; i < sheet.form.columns.length; i++) {
       String columName = sheet.form.columns[i];
-      widgets.add(Expanded(child: Text(_items.elementAt(index)[columName]!)));
+      widgets.add(Expanded(child: Text(_items.elementAt(index).datas[columName]!)));
     }
     return widgets;
   }
@@ -102,7 +102,7 @@ class MyCustomListState extends State<MyCustomList> {
         future: widget.store.loadForm(widget.formIndex),
         builder: (context, AsyncSnapshot<FormDatas> snapshot) {
           if (snapshot.hasData) {
-            _items = snapshot.data!.datas;
+            _items = snapshot.data!.lines;
             sheet = snapshot.data!;
             _scrollController = ScrollController(initialScrollOffset: initialScrollOffset);
             return Form(
