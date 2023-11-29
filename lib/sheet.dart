@@ -28,6 +28,20 @@ class FormSuggestionItem {
 }
 
 
+class MetaDatas {
+
+  final  LinkedHashMap<String,SheetDescriptor> sheetDescriptors;
+  final List<FormDescriptor> formDescriptors;
+  MetaDatas(this.sheetDescriptors, this.formDescriptors);
+}
+
+class MetaDatasCache {
+  final DateTime modifiedTime;
+  final MetaDatas metaDatas;
+  MetaDatasCache( this.metaDatas, this.modifiedTime);
+}
+
+
 class SheetDescriptor {
   final  LinkedHashMap<String,ColumnDescriptor> columns;
   final  List<String> referenceLabels;
@@ -40,4 +54,12 @@ class SheetDatas {
   final  List<String> referenceLabels;
 
   SheetDatas(this.datas, this.columns, this.referenceLabels);
+}
+
+
+
+class SheetDatasCache {
+  final DateTime modifiedTime;
+  final SheetDatas sheetContent;
+  SheetDatasCache( this.sheetContent, this.modifiedTime);
 }

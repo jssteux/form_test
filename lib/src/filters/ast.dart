@@ -92,7 +92,7 @@ class SupBinary extends Expression {
     dynamic righE = right.eval(variables);
 
     if( leftE is String && righE is String) {
-      print('eval $leftE $righE');
+      //print('eval $leftE $righE');
       return leftE.toUpperCase().compareTo(righE.toUpperCase()) > 0;
     } else  {
       return false;

@@ -87,10 +87,10 @@ class Parser {
 
 
 
-  SheetDescriptor? parseDescriptor(String sheetName, List<dynamic> rows) {
+  LinkedHashMap<String,SheetDescriptor> parseDescriptors( List<dynamic> rows) {
 
-    LinkedHashMap<String, ColumnDescriptor> columnsDescriptor = LinkedHashMap();
-    List<String> referenceLabels = [];
+    LinkedHashMap<String,SheetDescriptor> descriptors = LinkedHashMap();
+
     List<dynamic> elements = [];
 
     ParserContext ctx = const ParserContext(-1, 0);
@@ -101,90 +101,96 @@ class Parser {
       ctx =  parse(elements, rows, index, -1);
     }
 
-    bool found = false;
 
     // parse results
     for ( var element in elements){
-      if( found == false && element is ParserLevel) {
-        if(element.name == "SHEET")  {
-          for ( var subStep in element.children)  {
-            if( subStep is ParserProperty)  {
-              if (subStep.name == "NAME" && subStep.value == sheetName) {
-                found = true;
-                //('foundsheet');
+      if( element is ParserLevel) {
+        if (element.name == "SHEET") {
+
+          String?  sheetName;
+          LinkedHashMap<String,
+              ColumnDescriptor> columnsDescriptor = LinkedHashMap();
+          List<String> referenceLabels = [];
+
+
+          for (var subStep in element.children) {
+            if (subStep is ParserProperty) {
+              if (subStep.name == "NAME" ) {
+                sheetName = subStep.value;
               }
             }
           }
-          // Sheet found
-          if( found)  {
 
-            for ( var subStep in element.children)  {
-              if( subStep is ParserLevel)  {
-                if (subStep.name == "COLUMN") {
-                  //print('foudn coulmn');
-                  String? name;
-                  String type = "STRING";
-                  String label = "";
-                  String reference = "";
-                  bool   mandatory = false;
+          for (var subStep in element.children) {
+            if (subStep is ParserLevel) {
+              if (subStep.name == "COLUMN") {
+                //print('foudn coulmn');
+                String? name;
+                String type = "STRING";
+                String label = "";
+                String reference = "";
+                bool mandatory = false;
 
-                  for( var propertySheet in subStep.children)  {
-                    if( propertySheet is ParserProperty)  {
-                      if(propertySheet.name == "NAME") {
-                        name = propertySheet.value;
-                      }
-                      if(propertySheet.name == "TYPE") {
-                        type = propertySheet.value;
-                      }
-                      if(propertySheet.name == "LABEL") {
-                        label = propertySheet.value;
-                      }
-                      if(propertySheet.name == "REFERENCE") {
-                        reference = propertySheet.value;
-                      }
-                      if(propertySheet.name == "MANDATORY") {
-                        if( "TRUE" == propertySheet.value)  {
-                          mandatory = true;
-                        }
+                for (var propertySheet in subStep.children) {
+                  if (propertySheet is ParserProperty) {
+                    if (propertySheet.name == "NAME") {
+                      name = propertySheet.value;
+                    }
+                    if (propertySheet.name == "TYPE") {
+                      type = propertySheet.value;
+                    }
+                    if (propertySheet.name == "LABEL") {
+                      label = propertySheet.value;
+                    }
+                    if (propertySheet.name == "REFERENCE") {
+                      reference = propertySheet.value;
+                    }
+                    if (propertySheet.name == "MANDATORY") {
+                      if ("TRUE" == propertySheet.value) {
+                        mandatory = true;
                       }
                     }
                   }
-
-                  if(name != null) {
-                    columnsDescriptor.putIfAbsent(
-                        name, () => ColumnDescriptor(name!,type, label, reference, mandatory));
-                    //print('add column$name $type');
-                  }
                 }
 
-                if (subStep.name == "DISPLAY") {
-                  String name = "";
+                if (name != null) {
+                  columnsDescriptor.putIfAbsent(
+                      name, () =>
+                      ColumnDescriptor(
+                          name!, type, label, reference, mandatory));
+                  //print('add column$name $type');
+                }
+              }
 
-                  for( var propertySheet in subStep.children)  {
-                    if( propertySheet is ParserProperty)  {
-                      if(propertySheet.name == "NAME") {
-                        name = propertySheet.value;
-                      }
+              if (subStep.name == "DISPLAY") {
+                String name = "";
+
+                for (var propertySheet in subStep.children) {
+                  if (propertySheet is ParserProperty) {
+                    if (propertySheet.name == "NAME") {
+                      name = propertySheet.value;
                     }
                   }
-
-
-                    referenceLabels.add(name);
-                    //print('add column$name $type');
-
                 }
+
+
+                referenceLabels.add(name);
+                //print('add column$name $type');
+
               }
             }
           }
+
+          if( sheetName != null) {
+            descriptors.putIfAbsent(sheetName, () =>
+                SheetDescriptor(columnsDescriptor, referenceLabels));
+          }
+
         }
-
       }
-    }
-    if( found) {
-      return SheetDescriptor(columnsDescriptor, referenceLabels);
-    } else {
-      return null;
-    }
+   }
+
+    return descriptors;
   }
 
 

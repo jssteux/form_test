@@ -25,6 +25,9 @@ class FormStore {
   final sign_in.GoogleSignInAccount account;
   final Logger logger;
   final Parser parser;
+  Map<String, dynamic> sheetCaches = {};
+  MetaDatasCache? metatDatasCaches;
+
   FormStore(this.account, this.logger, {this.parser = const Parser()});
 
   Future<String?> save(File? file) async {
@@ -302,6 +305,19 @@ class FormStore {
   */
 
     //print(response.body.toString());
+    print('save datas');
+
+
+    // update cache
+    SheetDatasCache cache = sheetCaches[sheetName];
+    if( cache != null) {
+      if(index != -1) {
+        cache.sheetContent.datas[index] = formValues;
+      } else  {
+        cache.sheetContent.datas.add(formValues);
+      }
+    }
+
     if (context.mounted) {
       Navigator.of(context).pop(true);
     }
@@ -309,19 +325,39 @@ class FormStore {
 
   Future<SheetDescriptor?> loadDescriptor(
       String sheetName) async {
-    List<dynamic> rows = await getMetadatas();
-
-    return parser.parseDescriptor(sheetName, rows);
+    MetaDatas metadatas = await getMetadatas();
+    return metadatas.sheetDescriptors[sheetName];
   }
 
   Future<List<FormDescriptor>> getForms() async {
-    List<dynamic> rows = await getMetadatas();
-    List<FormDescriptor> forms = parser.parseForms(rows);
-    //print("forms ${forms.length}");
-    return forms;
+    MetaDatas metadatas = await getMetadatas();
+    return metadatas.formDescriptors;
   }
 
-  Future<List<dynamic>> getMetadatas() async {
+  Future<MetaDatas> getMetadatas() async {
+
+    print('loadt metadats');
+
+    MetaDatasCache? cache = metatDatasCaches;
+
+    DateTime? last = await getSheetInformation();
+    if( cache != null && last != null) {
+        if( last.isAtSameMomentAs(cache.modifiedTime))  {
+          print('use cache');
+          return cache.metaDatas;
+      }
+    }
+
+    print('load metadats internal');
+    MetaDatas metaDatas = await getMetadatasInternal();
+
+    print('return metadats');
+    metatDatasCaches = MetaDatasCache(metaDatas, last!);
+    return metatDatasCaches!.metaDatas;
+
+  }
+
+  Future<MetaDatas> getMetadatasInternal() async {
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -337,10 +373,65 @@ class FormStore {
 
     final data = jsonDecode(response.body.toString());
     final List<dynamic> rows = data['values'];
-    return rows;
+
+
+    List<FormDescriptor> forms = parser.parseForms(rows);
+    LinkedHashMap<String, SheetDescriptor> sheets = parser.parseDescriptors(rows);
+    return MetaDatas(sheets, forms);
+
+  }
+
+  Future<DateTime?> getSheetInformation() async {
+    final authHeaders = await account.authHeaders;
+
+    final authenticateClient = GoogleAuthClient(authHeaders);
+    final driveApi = drive.DriveApi(authenticateClient);
+
+    String? sheetFileId = await getSheetFileId(driveApi);
+    var file = await driveApi.files.get(
+        sheetFileId!, supportsAllDrives: true, $fields: 'modifiedTime');
+    if (file is drive.File) {
+      print('modifiedTime' + file.modifiedTime.toString());
+      return file.modifiedTime;
+    }
+
+    throw Exception("Spreadsheet not found");
   }
 
   Future<SheetDatas> loadDatas(String sheetName) async {
+
+    print('loadt datas');
+
+    bool reload = false;
+    var cache = sheetCaches[sheetName];
+
+    DateTime? last = await getSheetInformation();
+    if( cache != null && last != null) {
+      if( cache is SheetDatasCache) {
+        if( last.isAtSameMomentAs(cache.modifiedTime))  {
+          print('use cache');
+          return cache.sheetContent;
+        }
+      }
+    }
+
+    print('load datas internal');
+    SheetDatas datas = await loadDatasInternal(sheetName);
+
+
+    sheetCaches[ sheetName] = SheetDatasCache(datas, last!);
+
+    print('return datas');
+    SheetDatasCache storedCache = sheetCaches[ sheetName];
+    return storedCache.sheetContent;
+  }
+
+
+
+  Future<SheetDatas> loadDatasInternal(String sheetName) async {
+
+
+
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
