@@ -6,6 +6,7 @@ import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/custom_image_state.dart';
 import 'package:form_test/form_store.dart';
 import 'package:form_test/row.dart';
+import 'package:form_test/sheet.dart';
 import 'package:intl/intl.dart';
 import 'custom_image_widget.dart';
 import 'custom_image_widget_web.dart';
@@ -38,7 +39,7 @@ class MyCustomFormState extends State<MyCustomForm> {
   late bool autofocusInit;
   late LinkedHashMap<String, ColumnDescriptor> columns;
   Map<String, String> referencesValues = {};
-
+  Map<String, String> referenceLabels = {};
   final _formKey = GlobalKey<FormState>();
 
   Map<String, TextEditingController> controllers = {};
@@ -54,34 +55,50 @@ class MyCustomFormState extends State<MyCustomForm> {
     ColumnDescriptor columDescriptor = columns[columnName]!;
 
     if (columDescriptor.reference.isNotEmpty) {
-      var myController = TextEditingController(text: initialValues[columnName]!+ "XXXXXORIGINALXXXXXXXX");
+      var myController = TextEditingController(text: referenceLabels[columnName]);
       controllers.putIfAbsent(columnName, () => myController);
       return TypeAheadFormField (
         textFieldConfiguration: TextFieldConfiguration(
             controller: myController,
             decoration:  InputDecoration(
-                labelText: columDescriptor.label//label text of field
+              suffixIcon:
+              SizedBox(
+                  width: 100,
+                  child: Row(children: [
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () async {
+                        myController.text = "";
+                        referencesValues[columnName] = "";
+                      },
+                      icon: const Icon(Icons.clear),
+                    ),
+
+                  ])),
+              labelText: columDescriptor.label, //label text of field
+
+
             )
         ),
         suggestionsCallback: (pattern) async {
           // Replace with your backend call to get suggestions
-          List<String> suggestions = ["1111","2222"];
+          List<FormSuggestionItem> suggestions = await widget.store.getSuggestions(columDescriptor.reference, pattern);
           return suggestions;
         },
         itemBuilder: (context, suggestion) {
           // Customize each suggestion item here
           return ListTile(
-            title: Text(suggestion + "XXXXXXXXXX"),
+            title: Text(suggestion.displayName),
           );
         },
         onSuggestionSelected: (suggestion) {
           // Handle the user's selection
-          myController.text = suggestion + "XXXXXXXX";
-          referencesValues[columnName] = suggestion;
+          myController.text = suggestion.displayName;
+          referencesValues[columnName] = suggestion.ref;
         },
-        onSuggestionsBoxToggle: (isOpen) {
+        onSuggestionsBoxToggle: (isOpen) async {
           // Restore original value
-          if( isOpen == false)  {myController.text = referencesValues[columnName]! + "XXXXXORIGINALXXXXXXXX";}
+          if( isOpen == false)  {myController.text = await widget.store.getReferenceLabel(columDescriptor.reference,referencesValues[columnName]!);}
           if( isOpen == true)   {myController.text = "";}
           },
 
@@ -245,9 +262,22 @@ class MyCustomFormState extends State<MyCustomForm> {
 
             if (widget.index != -1) {
               initialValues = snapshot.data!.datas;
+
             }
 
             files = snapshot.data!.files;
+
+
+            // references
+            for (int i = 0; i < columns.length; i++) {
+              String columnName = columns.keys.elementAt(i);
+              ColumnDescriptor columDescriptor = columns[columnName]!;
+
+              if (columDescriptor.reference.isNotEmpty) {
+                referencesValues[columnName] =   snapshot.data!.datas[columnName]! ;
+            }}
+
+            referenceLabels =  snapshot.data!.initialsReferenceLabels;
 
             return Form(
                 key: _formKey,

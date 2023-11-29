@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/form_descriptor.dart';
+import 'package:form_test/sheet.dart';
 import 'package:form_test/src/parser/parser_context.dart';
 import 'package:form_test/src/parser/parser_level.dart';
 import 'package:form_test/src/parser/parser_property.dart';
@@ -86,9 +87,10 @@ class Parser {
 
 
 
-  LinkedHashMap<String, ColumnDescriptor>? parseDescriptor(String sheetName, List<dynamic> rows) {
+  SheetDescriptor? parseDescriptor(String sheetName, List<dynamic> rows) {
 
-    LinkedHashMap<String, ColumnDescriptor> desc = LinkedHashMap();
+    LinkedHashMap<String, ColumnDescriptor> columnsDescriptor = LinkedHashMap();
+    List<String> referenceLabels = [];
     List<dynamic> elements = [];
 
     ParserContext ctx = const ParserContext(-1, 0);
@@ -149,10 +151,27 @@ class Parser {
                   }
 
                   if(name != null) {
-                    desc.putIfAbsent(
+                    columnsDescriptor.putIfAbsent(
                         name, () => ColumnDescriptor(name!,type, label, reference, mandatory));
                     //print('add column$name $type');
                   }
+                }
+
+                if (subStep.name == "DISPLAY") {
+                  String name = "";
+
+                  for( var propertySheet in subStep.children)  {
+                    if( propertySheet is ParserProperty)  {
+                      if(propertySheet.name == "NAME") {
+                        name = propertySheet.value;
+                      }
+                    }
+                  }
+
+
+                    referenceLabels.add(name);
+                    //print('add column$name $type');
+
                 }
               }
             }
@@ -162,7 +181,7 @@ class Parser {
       }
     }
     if( found) {
-      return desc;
+      return SheetDescriptor(columnsDescriptor, referenceLabels);
     } else {
       return null;
     }

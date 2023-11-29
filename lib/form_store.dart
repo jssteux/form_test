@@ -307,30 +307,22 @@ class FormStore {
     }
   }
 
-
-
-
-  Future<LinkedHashMap<String, ColumnDescriptor>?> loadDescriptor(
+  Future<SheetDescriptor?> loadDescriptor(
       String sheetName) async {
     List<dynamic> rows = await getMetadatas();
 
     return parser.parseDescriptor(sheetName, rows);
-
   }
-
-
 
   Future<List<FormDescriptor>> getForms() async {
     List<dynamic> rows = await getMetadatas();
-    List<FormDescriptor> forms = parser.parseForms( rows);
+    List<FormDescriptor> forms = parser.parseForms(rows);
     //print("forms ${forms.length}");
     return forms;
   }
 
-
-
   Future<List<dynamic>> getMetadatas() async {
-      final authHeaders = await account.authHeaders;
+    final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
@@ -348,8 +340,7 @@ class FormStore {
     return rows;
   }
 
-
-  Future<SheetDatas> loadDatas  ( String sheetName) async {
+  Future<SheetDatas> loadDatas(String sheetName) async {
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -382,48 +373,38 @@ class FormStore {
       res.add(rowMap);
     }
 
-    LinkedHashMap<String, ColumnDescriptor>? columns = await loadDescriptor(
-        sheetName);
+    var sheetDescriptor =
+        await loadDescriptor(sheetName);
 
-    return SheetDatas(res, columns!);
+    return SheetDatas(res, sheetDescriptor!.columns, sheetDescriptor!.referenceLabels);
   }
 
-
-  Future<FormDatas> loadForm( int formIndex) async {
+  Future<FormDatas> loadForm(int formIndex) async {
     logger.logEvent("loadDatas A APPROFONDIR");
 
-
     List<FormDescriptor> forms = await getForms();
-    FormDescriptor form = forms[ formIndex];
+    FormDescriptor form = forms[formIndex];
     String sheetName = form.sheetName;
 
     SheetDatas datas = await loadDatas(sheetName);
 
+    List<FilteredLine> filteredLines = [];
+    for (int i = 0; i < datas.datas.length; i++) {
+      bool insert = false;
+      if (form.condition.isNotEmpty) {
+        var ast = filter_parser.parse(form.condition).value;
 
-
-
-
-      List<FilteredLine> filteredLines = [];
-      for (int i = 0; i < datas.datas.length; i++) {
-        bool insert = false;
-        if( form.condition.isNotEmpty) {
-          var ast = filter_parser
-              .parse(form.condition)
-              .value;
-
-          var res = ast.eval({'NOM': datas.datas[i]['NOM']});
-          insert = res;
-        } else {
-          insert = true;
-        }
-
-        if( insert)  {
-          filteredLines.add(FilteredLine(datas.datas[i],i));
-        }
+        var res = ast.eval({'NOM': datas.datas[i]['NOM']});
+        insert = res;
+      } else {
+        insert = true;
       }
-      return FormDatas(filteredLines, datas.columns, form);
 
-
+      if (insert) {
+        filteredLines.add(FilteredLine(datas.datas[i], i));
+      }
+    }
+    return FormDatas(filteredLines, datas.columns, form);
 
 /*
 
@@ -443,14 +424,72 @@ class FormStore {
     print('Unknown exception: $e');
   }
 */
+  }
 
+  Future<List<FormSuggestionItem>> getSuggestions(
+      String sheetName, String pattern) async {
+    List<FormSuggestionItem> items = [];
+    SheetDatas datas = await loadDatas(sheetName);
+    for (int i = 0; i < datas.datas.length; i++) {
+      bool insert = false;
+
+      var dataLine = datas.datas[i];
+
+      for (int j = 0; j < datas.columns.keys.length; j++) {
+        var columnName = datas.columns.keys.elementAt(j);
+        if (dataLine[columnName]!.startsWith(pattern)) {
+          insert = true;
+        }
+      }
+
+      if (insert) {
+        String? ref = datas.datas[i]["ID"];
+        String? label = getLabelInternal(datas, i);
+        if (ref != null && label != null) {
+          items.add(FormSuggestionItem(ref, label));
+        }
+      }
+    }
+    return items;
+  }
+
+  String? getLabelInternal(SheetDatas datas, int i) {
+     String? value;
+    for (String columnLabel in datas.referenceLabels) {
+      if( datas.datas[i][columnLabel] != null) {
+        if (value != null) {
+          value += " ";
+        } else  {
+          value = "";
+        }
+       value = value + datas.datas[i][columnLabel]!;
+      }
+    }
+    return value;
+  }
+
+  String  getReferenceLabelInternal(SheetDatas datas, String ref)  {
+    for (int i = 0; i < datas.datas.length; i++) {
+      bool insert = false;
+      String? currentRef = datas.datas[i]["ID"];
+      if (currentRef != null) {
+        if (currentRef == ref) {
+          String? ref = datas.datas[i]["ID"];
+          String? currentLabel = getLabelInternal(datas, i);
+          if (ref != null && currentLabel != null) {
+            return currentLabel;
+          }
+        }
+      }
+    }
+    return "-";
   }
 
 
-
-
-
-
+  Future<String> getReferenceLabel(String sheetName, String ref) async {
+    SheetDatas datas = await loadDatas(sheetName);
+    return getReferenceLabelInternal(datas, ref);
+  }
 
   Future<DatasRow> loadRow(String sheetName, int index) async {
     SheetDatas sheet = await loadDatas(sheetName);
@@ -459,12 +498,17 @@ class FormStore {
       rowDatas = sheet.datas[index];
     }
     LinkedHashMap<String, ColumnDescriptor> columns = sheet.columns;
-
+    Map<String, String > referenceLabels = {};
     Map<String, CustomImageState> rowFiles = {};
     for (int j = 0; j < columns.length; j++) {
       ColumnDescriptor desc = columns.values.elementAt(j);
       String columnName = columns.keys.elementAt(j);
-      if (desc.type == "GOOGLE_IMAGE") {
+
+      if (desc.reference.isNotEmpty){
+        String refLabel = await getReferenceLabel(desc.reference,  rowDatas[columnName]!);
+        referenceLabels.putIfAbsent( columnName,  () => refLabel);
+
+      } else if (desc.type == "GOOGLE_IMAGE") {
         String? url = rowDatas[columnName];
         if (url != null && url.isNotEmpty) {
           Uint8List? content = await read(url);
@@ -474,7 +518,7 @@ class FormStore {
       }
     }
 
-    return DatasRow(rowDatas, columns, rowFiles);
+    return DatasRow(rowDatas, columns, rowFiles, referenceLabels);
   }
 
   Future<String?> getSheetFileId(drive.DriveApi driveApi) async {

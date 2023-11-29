@@ -20,9 +20,24 @@ class FormDatas {
 }
 
 
+class FormSuggestionItem {
+  final  String ref;
+  final  String displayName;
+
+  FormSuggestionItem(this.ref, this.displayName);
+}
+
+
+class SheetDescriptor {
+  final  LinkedHashMap<String,ColumnDescriptor> columns;
+  final  List<String> referenceLabels;
+  SheetDescriptor(this.columns, this.referenceLabels);
+}
+
 class SheetDatas {
   final  List<Map<String,String>> datas;
   final  LinkedHashMap<String,ColumnDescriptor> columns;
+  final  List<String> referenceLabels;
 
-  SheetDatas(this.datas, this.columns);
+  SheetDatas(this.datas, this.columns, this.referenceLabels);
 }

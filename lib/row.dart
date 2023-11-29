@@ -7,6 +7,7 @@ class DatasRow {
   final  Map<String,String> datas;
   final  LinkedHashMap<String,ColumnDescriptor> columns;
   final  Map<String,CustomImageState> files;
+  final  Map<String,String> initialsReferenceLabels;
 
-  DatasRow(this.datas, this.columns, this.files);
+  DatasRow(this.datas, this.columns, this.files, this.initialsReferenceLabels);
 }
