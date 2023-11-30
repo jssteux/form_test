@@ -69,8 +69,20 @@ class MyCustomListState extends State<MyCustomList> {
     List<Widget> widgets = [];
 
     for (int i = 0; i < sheet.form.columns.length; i++) {
+      String? label;
+
       String columName = sheet.form.columns[i];
-      widgets.add(Expanded(child: Text(_items.elementAt(index).datas[columName]!)));
+      ColumnDescriptor? desc = sheet.columns[columName];
+      if( desc != null && desc.reference.isNotEmpty)  {
+        label = sheet.lines[index].referenceLabels[columName];
+      } else  {
+        label = _items.elementAt(index).datas[columName];
+      }
+
+      label ??= "";
+
+
+      widgets.add(Expanded(child: Text(label!)));
     }
     return widgets;
   }

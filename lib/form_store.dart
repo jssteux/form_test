@@ -467,13 +467,15 @@ class FormStore {
     var sheetDescriptor =
         await loadDescriptor(sheetName);
 
-    return SheetDatas(res, sheetDescriptor!.columns, sheetDescriptor!.referenceLabels);
+    return SheetDatas(res, sheetDescriptor!.columns, sheetDescriptor!.refDisplayName);
   }
 
   Future<FormDatas> loadForm(int formIndex) async {
     logger.logEvent("loadDatas A APPROFONDIR");
 
     List<FormDescriptor> forms = await getForms();
+
+
     FormDescriptor form = forms[formIndex];
     String sheetName = form.sheetName;
 
@@ -481,6 +483,7 @@ class FormStore {
 
     List<FilteredLine> filteredLines = [];
     for (int i = 0; i < datas.datas.length; i++) {
+      Map<String, String > referenceLabels = {};
       bool insert = false;
       if (form.condition.isNotEmpty) {
         var ast = filter_parser.parse(form.condition).value;
@@ -492,7 +495,18 @@ class FormStore {
       }
 
       if (insert) {
-        filteredLines.add(FilteredLine(datas.datas[i], i));
+        LinkedHashMap<String, ColumnDescriptor> columns = datas.columns;
+        for (int j = 0; j < columns.length; j++) {
+          ColumnDescriptor desc = columns.values.elementAt(j);
+          String columnName = columns.keys.elementAt(j);
+          if (desc.reference.isNotEmpty) {
+            String refLabel = await getReferenceLabel(
+                desc.reference, datas.datas[i][columnName]!);
+            referenceLabels.putIfAbsent(columnName, () => refLabel);
+          }
+        }
+
+        filteredLines.add(FilteredLine(datas.datas[i], referenceLabels, i));
       }
     }
     return FormDatas(filteredLines, datas.columns, form);
