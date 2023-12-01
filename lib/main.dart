@@ -227,9 +227,11 @@ class _FirstRouteState extends State<FirstRoute> {
         widgets.add(ElevatedButton(
           child: Text(form.label),
           onPressed: () {
+
+
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => ListRoute(store, formIndex, form.label)),
+              MaterialPageRoute(builder: (context) => ListRoute(store, Context(null, formIndex, null, null), form.label)),
             );
           },
         ));
@@ -276,13 +278,21 @@ class FormRoute extends StatelessWidget {
   }
 }
 
+class Context {
+  final String? sheetName;
+  final int formIndex;
+  final int? rowItem;
+  final String? sheetItemID;
+
+  const Context( this.sheetName, this.formIndex, this.rowItem , this.sheetItemID);
+}
 
 class ListRoute extends StatelessWidget {
   final FormStore store;
   final String label;
-  final int formIndex;
+  final Context context;
 
-  const ListRoute(  this.store, this.formIndex, this.label, {super.key });
+  const ListRoute(  this.store, this.context, this.label, {super.key });
 
   @override
   Widget build(BuildContext context) {
@@ -291,9 +301,9 @@ class ListRoute extends StatelessWidget {
         title: Text(label),
       ),
       body: Center(
-            child:  MyCustomList( store, formIndex)
+            child:  MyCustomList( store, this.context))
 
-      ),
-    );
+      );
+
   }
 }

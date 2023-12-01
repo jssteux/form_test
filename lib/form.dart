@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/custom_image_state.dart';
+import 'package:form_test/form_descriptor.dart';
 import 'package:form_test/form_store.dart';
+import 'package:form_test/main.dart';
 import 'package:form_test/row.dart';
 import 'package:form_test/sheet.dart';
 import 'package:intl/intl.dart';
@@ -38,6 +40,7 @@ class MyCustomFormState extends State<MyCustomForm> {
   late Map<String, CustomImageState> files;
   late bool autofocusInit;
   late LinkedHashMap<String, ColumnDescriptor> columns;
+  late List<FormDescriptor> forms;
   Map<String, String> referencesValues = {};
   Map<String, String> referenceLabels = {};
   final _formKey = GlobalKey<FormState>();
@@ -247,6 +250,23 @@ class MyCustomFormState extends State<MyCustomForm> {
     for (int i = 0; i < columns.length; i++) {
       widgets.add(_row(i));
     }
+
+
+    for (var i = 0; i< forms.length; i++)  {
+      var form = forms[i];
+      var label =
+      widgets.add(
+      ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ListRoute(widget.store, Context(widget.sheetName,i,widget.index, initialValues["ID"]),form.label)
+          ));
+        },
+        child: Text(form.label!)));
+
+    }
+
     return widgets;
   }
 
@@ -259,6 +279,7 @@ class MyCustomFormState extends State<MyCustomForm> {
         builder: (context, AsyncSnapshot<DatasRow> snapshot) {
           if (snapshot.hasData) {
             columns = snapshot.data!.columns;
+            forms = snapshot.data!.formDescriptors;
 
             if (widget.index != -1) {
               initialValues = snapshot.data!.datas;
@@ -274,7 +295,11 @@ class MyCustomFormState extends State<MyCustomForm> {
               ColumnDescriptor columDescriptor = columns[columnName]!;
 
               if (columDescriptor.reference.isNotEmpty) {
-                referencesValues[columnName] =   snapshot.data!.datas[columnName]! ;
+                if( snapshot.data!.datas[columnName] != null) {
+                  referencesValues[columnName] =   snapshot.data!.datas[columnName]! ;
+                } else  {
+                  referencesValues[columnName] = "";
+                }
             }}
 
             referenceLabels =  snapshot.data!.initialsReferenceLabels;

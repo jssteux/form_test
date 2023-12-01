@@ -43,6 +43,23 @@ class Variable extends Expression {
   String toString() => 'Variable{$name}';
 }
 
+/// An function expression.
+class SimpleFunction extends Expression {
+  SimpleFunction(this.name, this.function);
+
+  final String name;
+
+  final dynamic Function(Map<String,dynamic>) function;
+
+  @override
+  dynamic eval(Map<String, dynamic> variables) => function(variables);
+
+  @override
+  String toString() => 'Unary{$name}';
+}
+
+
+
 /// An unary expression.
 class Unary extends Expression {
   Unary(this.name, this.value, this.function);
@@ -100,5 +117,27 @@ class SupBinary extends Expression {
   }
 }
 
+/// A binary expression.
+class EqualsBinary extends Expression {
+  EqualsBinary(this.left, this.right);
+  final Expression left;
+  final Expression right;
 
+
+  @override
+  String toString() => 'EqualsBinary';
+
+  @override
+  dynamic eval(Map<String, dynamic> variables) {
+    dynamic leftE = left.eval(variables);
+    dynamic righE = right.eval(variables);
+
+    if( leftE is String && righE is String) {
+      print('eval equals $leftE $righE');
+      return (leftE.toUpperCase().compareTo(righE.toUpperCase()) == 0);
+    } else  {
+      return false;
+    }
+  }
+}
 

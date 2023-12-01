@@ -47,7 +47,8 @@ class MetaDatasCache {
 class SheetDescriptor {
   final  LinkedHashMap<String,ColumnDescriptor> columns;
   final  List<String> refDisplayName;
-  SheetDescriptor(this.columns, this.refDisplayName);
+  final List<FormDescriptor> formDescriptors;
+  SheetDescriptor(this.columns, this.formDescriptors, this.refDisplayName);
 }
 
 class SheetDatas {

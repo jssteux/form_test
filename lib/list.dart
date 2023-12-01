@@ -8,10 +8,11 @@ import 'column_descriptor.dart';
 
 // Define a custom Form widget.
 class MyCustomList extends StatefulWidget {
-  const MyCustomList(this.store, this.formIndex, {super.key});
+  const MyCustomList(this.store, this.context, {super.key});
 
   final FormStore store;
-  final int formIndex;
+  final Context context;
+
 
   @override
   MyCustomListState createState() {
@@ -111,7 +112,7 @@ class MyCustomListState extends State<MyCustomList> {
 
     return FutureBuilder<FormDatas>(
         key: _refreshKey,
-        future: widget.store.loadForm(widget.formIndex),
+        future: widget.store.loadForm(widget.context.sheetName, widget.context.formIndex, widget.context.sheetItemID),
         builder: (context, AsyncSnapshot<FormDatas> snapshot) {
           if (snapshot.hasData) {
             _items = snapshot.data!.lines;

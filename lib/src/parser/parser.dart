@@ -182,8 +182,11 @@ class Parser {
           }
 
           if( sheetName != null) {
+
+            List<FormDescriptor> sheetForms = parseFormsInternal(element.children);
+
             descriptors.putIfAbsent(sheetName, () =>
-                SheetDescriptor(columnsDescriptor, referenceLabels));
+                SheetDescriptor(columnsDescriptor, sheetForms, referenceLabels));
           }
 
         }
@@ -193,11 +196,10 @@ class Parser {
     return descriptors;
   }
 
-
   List<FormDescriptor>  parseForms( List<dynamic> rows) {
 
     List<FormDescriptor> forms = [];
-    
+
     List<dynamic> elements = [];
 
     ParserContext ctx = const ParserContext(-1, 0);
@@ -208,7 +210,12 @@ class Parser {
       ctx =  parse(elements, rows, index, -1);
     }
 
-    
+    return( parseFormsInternal(elements));
+  }
+
+  List<FormDescriptor>  parseFormsInternal( List<dynamic> elements) {
+
+    List<FormDescriptor> forms = [];
 
     // parse results
     for ( var element in elements){
