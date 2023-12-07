@@ -466,7 +466,7 @@ class FormStore {
   }
 
   Future<FormDatas> loadForm(
-      String? formSheetName, int formIndex, String? sheetItemID) async {
+      String? formSheetName, int formIndex, Context ctx) async {
     List<FormDescriptor> forms;
 
     if (formSheetName != null) {
@@ -495,11 +495,8 @@ class FormStore {
         for (String variable in datas.columns.keys) {
           variables[variable] = datas.datas[i][variable];
         }
-        if (sheetItemID != null) {
-          variables["_SHEET_ITEM_ID"] = sheetItemID;
-        }
 
-        var res = evalExpression(condition, variables);
+        var res = evalExpression(condition, variables, ctx);
 
         insert = res;
       } else {
@@ -608,7 +605,7 @@ class FormStore {
   }
 
   Future<DatasRow> loadRow(
-      String sheetName, int index, String? sheetItemID) async {
+      String sheetName, int index, Context ctx) async {
     SheetDatas sheet = await loadDatas(sheetName);
     Map<String, String> rowDatas = {};
     if (index != -1) {
@@ -627,12 +624,12 @@ class FormStore {
         String initExp = desc.defaultValue;
         if (initExp.isNotEmpty) {
           Map<String, String?> variables = {};
-          if (sheetItemID != null) {
-            variables["_SHEET_ITEM_ID"] = sheetItemID;
-          }
-          var res = evalExpression(initExp, variables);
+
+
+
+          var res = evalExpression(initExp, variables, ctx);
           if (res != null) {
-            rowDatas[columnName] = evalExpression(initExp, variables);
+            rowDatas[columnName] = res;
           }
         }
       }
@@ -662,7 +659,7 @@ class FormStore {
     return DatasRow(rowDatas, columns, rowFiles, referenceLabels, forms);
   }
 
-  dynamic evalExpression(String initExp, Map<String, String?> variables) {
+  dynamic evalExpression(String initExp, Map<String, String?> variables, Context ctx) {
     var ast;
 
     try {
@@ -679,6 +676,16 @@ class FormStore {
     //{'NOM': datas.datas[i]['NOM'], 'CLIENT': datas.datas[i]['CLIENT'], "_CTX": '1'}
 
     try {
+      if( ctx.sheetItemID != null) {
+        variables["_SHEET_ITEM_ID"] = ctx.sheetItemID;
+      }
+
+      if( ctx.sheetName != null) {
+        variables["_SHEET_NAME"] = ctx.sheetName;
+      }
+
+
+
       res = ast.eval(variables);
     } catch (err) {
       print('eval error' + err.toString());

@@ -16,9 +16,10 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 // Define a custom Form widget.
 class MyCustomForm extends StatefulWidget {
-  const MyCustomForm(this.store,  this.context, {super.key});
+  const MyCustomForm(this.store,  this.sheetName, this.rowIndex, this.context, {super.key});
   final FormStore store;
-
+  final String sheetName;
+  final int rowIndex;
   final Context context;
 
   @override
@@ -260,7 +261,7 @@ class MyCustomFormState extends State<MyCustomForm> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => ListRoute(widget.store, Context(widget.context.sheetName!,i,widget.context.rowItem, initialValues["ID"]),form.label)
+            MaterialPageRoute(builder: (context) => ListRoute(widget.store, widget.sheetName, i, Context(widget.sheetName, initialValues["ID"]),form.label)
           ));
         },
         child: Text(form.label!)));
@@ -275,7 +276,7 @@ class MyCustomFormState extends State<MyCustomForm> {
     //print('build');
     // Build a Form widget using the _formKey created above.
     return FutureBuilder<DatasRow>(
-        future: widget.store.loadRow(widget.context.sheetName!, widget.context.rowItem!, widget.context.sheetItemID),
+        future: widget.store.loadRow(widget.sheetName!, widget.rowIndex!, widget.context),
         builder: (context, AsyncSnapshot<DatasRow> snapshot) {
           if (snapshot.hasData) {
             columns = snapshot.data!.columns;
@@ -356,7 +357,7 @@ class MyCustomFormState extends State<MyCustomForm> {
                                 }
 
                                 widget.store.saveData(
-                                    context, widget.context.sheetName!,formValues, columns, files);
+                                    context, widget.sheetName,formValues, columns, files);
                               }
                             },
 

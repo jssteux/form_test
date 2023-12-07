@@ -72,5 +72,14 @@ Expression _createFunction(String name)
     print("create function $functionName");
     return SimpleFunction(functionName, functions[functionName]!);
 }
-Expression _createUnaryFunction(String name, Expression expression) =>
-    Unary(name, expression, unaryFunctions[name]!);
+Expression _createUnaryFunction(String name, Expression expression) {
+  String functionName = name.replaceAll(" ", "");
+
+
+    if( functionName == "CURRENT")  {
+      return Current(expression);
+    }
+    else {
+    return Unary(name, expression, unaryFunctions[name]!);
+  }
+}

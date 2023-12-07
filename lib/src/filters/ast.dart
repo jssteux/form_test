@@ -75,6 +75,37 @@ class Unary extends Expression {
   String toString() => 'Unary{$name}';
 }
 
+
+/// An unary expression.
+class Current extends Expression {
+  Current(this.value);
+
+  final Expression value;
+
+
+  @override
+  dynamic eval(Map<String, dynamic> variables) {
+
+    dynamic valueE = value.eval(variables);
+
+      if( variables["_SHEET_NAME"] == valueE) {
+            return variables["_SHEET_ITEM_ID"];
+     }
+
+
+    return null;
+  }
+
+  @override
+  String toString() => 'Content{$value}';
+}
+
+
+
+
+
+
+
 /// A binary expression.
 class Binary extends Expression {
   Binary(this.name, this.left, this.right, this.function);
@@ -139,5 +170,8 @@ class EqualsBinary extends Expression {
       return false;
     }
   }
+
+
+
 }
 

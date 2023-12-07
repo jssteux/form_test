@@ -231,7 +231,7 @@ class _FirstRouteState extends State<FirstRoute> {
 
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => ListRoute(store, Context(null, formIndex, null, null), form.label)),
+              MaterialPageRoute(builder: (context) => ListRoute(store, null, formIndex, const Context(null, null), form.label)),
             );
           },
         ));
@@ -260,9 +260,11 @@ class _FirstRouteState extends State<FirstRoute> {
 class FormRoute extends StatelessWidget {
   final FormStore store;
   final Context context;
+  final String sheetName;
+  final int rowIndex;
 
 
-   const FormRoute(  this.store, this.context,  {super.key });
+  const FormRoute(  this.store, this.sheetName, this.rowIndex, this.context,  {super.key });
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +273,7 @@ class FormRoute extends StatelessWidget {
         title: const Text('Formulaire saisie'),
       ),
       body: Center(
-          child:  MyCustomForm( store, this.context)
+          child:  MyCustomForm( store, sheetName, rowIndex, this.context)
         ),
 
     );
@@ -280,19 +282,19 @@ class FormRoute extends StatelessWidget {
 
 class Context {
   final String? sheetName;
-  final int formIndex;
-  final int? rowItem;
   final String? sheetItemID;
 
-  const Context( this.sheetName, this.formIndex, this.rowItem , this.sheetItemID);
+  const Context( this.sheetName, this.sheetItemID);
 }
 
 class ListRoute extends StatelessWidget {
   final FormStore store;
   final String label;
+  final String? sheetName;
+  final int formIndex;
   final Context context;
 
-  const ListRoute(  this.store, this.context, this.label, {super.key });
+  const ListRoute(  this.store, this.sheetName, this.formIndex, this.context, this.label, {super.key });
 
   @override
   Widget build(BuildContext context) {
@@ -301,7 +303,7 @@ class ListRoute extends StatelessWidget {
         title: Text(label),
       ),
       body: Center(
-            child:  MyCustomList( store, this.context))
+            child:  MyCustomList( store, sheetName, formIndex, this.context))
 
       );
 

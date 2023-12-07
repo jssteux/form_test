@@ -8,10 +8,12 @@ import 'column_descriptor.dart';
 
 // Define a custom Form widget.
 class MyCustomList extends StatefulWidget {
-  const MyCustomList(this.store, this.context, {super.key});
+  const MyCustomList(this.store, this.sheetName, this.formIndex, this.context, {super.key});
 
   final FormStore store;
   final Context context;
+  final String? sheetName;
+  final int formIndex;
 
 
   @override
@@ -42,7 +44,7 @@ class MyCustomListState extends State<MyCustomList> {
       //print('offset :$initialScrollOffset' );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => FormRoute(widget.store, Context( sheet.form.sheetName, -1, sheet.lines[current].originalIndex, widget.context.sheetItemID))),
+        MaterialPageRoute(builder: (context) => FormRoute(widget.store, sheet.form.sheetName, sheet.lines[current].originalIndex, widget.context)),
       ).then((value) =>
             setState( (){ if(value == true) {
               _refreshKey = UniqueKey();} })); }
@@ -112,7 +114,7 @@ class MyCustomListState extends State<MyCustomList> {
 
     return FutureBuilder<FormDatas>(
         key: _refreshKey,
-        future: widget.store.loadForm(widget.context.sheetName, widget.context.formIndex, widget.context.sheetItemID),
+        future: widget.store.loadForm(widget.sheetName, widget.formIndex, widget.context),
         builder: (context, AsyncSnapshot<FormDatas> snapshot) {
           if (snapshot.hasData) {
             _items = snapshot.data!.lines;
@@ -159,7 +161,7 @@ class MyCustomListState extends State<MyCustomList> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => FormRoute(widget.store, Context(sheet.form.sheetName, -1, -1, widget.context.sheetItemID ))),
+                            MaterialPageRoute(builder: (context) => FormRoute(widget.store, sheet.form.sheetName, -1, widget.context)),
                           ).then((value) =>
                               setState( (){ if(value == true) {
                                 _refreshKey = UniqueKey();} }));

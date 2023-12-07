@@ -1,24 +1,28 @@
 import 'dart:math';
 
+import 'package:form_test/src/filters/ast.dart';
+
 /// Common mathematical constants.
 final constants = {
 
 };
 
-dynamic unaryExemple(dynamic exp){
+dynamic current(dynamic exp){
+
   return "1";
 }
 
-dynamic current(Map<String, dynamic> variables){
+
+dynamic today(Map<String, dynamic> variables){
   return variables['_SHEET_ITEM_ID'];
 }
 
 /// Common mathematical functions.
 final functions = {
-  'CURRENT': current,
+  'TODAY': today,
 };
 
 final unaryFunctions = {
-  'unaryExemple': unaryExemple,
+  'CURRENT': current,
 };
 
