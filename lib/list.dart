@@ -42,7 +42,7 @@ class MyCustomListState extends State<MyCustomList> {
       //print('offset :$initialScrollOffset' );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => FormRoute(widget.store, sheet.form.sheetName, sheet.lines[current].originalIndex)),
+        MaterialPageRoute(builder: (context) => FormRoute(widget.store, Context( sheet.form.sheetName, -1, sheet.lines[current].originalIndex, widget.context.sheetItemID))),
       ).then((value) =>
             setState( (){ if(value == true) {
               _refreshKey = UniqueKey();} })); }
@@ -159,7 +159,7 @@ class MyCustomListState extends State<MyCustomList> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => FormRoute(widget.store, sheet.form.sheetName, -1)),
+                            MaterialPageRoute(builder: (context) => FormRoute(widget.store, Context(sheet.form.sheetName, -1, -1, widget.context.sheetItemID ))),
                           ).then((value) =>
                               setState( (){ if(value == true) {
                                 _refreshKey = UniqueKey();} }));

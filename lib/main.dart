@@ -259,10 +259,10 @@ class _FirstRouteState extends State<FirstRoute> {
 
 class FormRoute extends StatelessWidget {
   final FormStore store;
-  final String sheetName;
-  final int index;
+  final Context context;
 
-   const FormRoute(  this.store, this.sheetName, this.index, {super.key });
+
+   const FormRoute(  this.store, this.context,  {super.key });
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +271,7 @@ class FormRoute extends StatelessWidget {
         title: const Text('Formulaire saisie'),
       ),
       body: Center(
-          child:  MyCustomForm( store, sheetName, index)
+          child:  MyCustomForm( store, this.context)
         ),
 
     );

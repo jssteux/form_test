@@ -29,7 +29,6 @@ class FormStore {
   Map<String, dynamic> sheetCaches = {};
   MetaDatasCache? metatDatasCaches;
 
-
   FormStore(this.account, this.logger, {this.parser = const Parser()});
 
   Future<String?> save(File? file) async {
@@ -309,13 +308,12 @@ class FormStore {
     //print(response.body.toString());
     print('save datas');
 
-
     // update cache
     SheetDatasCache cache = sheetCaches[sheetName];
-    if( cache != null) {
-      if(index != -1) {
+    if (cache != null) {
+      if (index != -1) {
         cache.sheetContent.datas[index] = formValues;
-      } else  {
+      } else {
         cache.sheetContent.datas.add(formValues);
       }
     }
@@ -325,8 +323,7 @@ class FormStore {
     }
   }
 
-  Future<SheetDescriptor?> loadDescriptor(
-      String sheetName) async {
+  Future<SheetDescriptor?> loadDescriptor(String sheetName) async {
     MetaDatas metadatas = await getMetadatas();
     return metadatas.sheetDescriptors[sheetName];
   }
@@ -337,16 +334,15 @@ class FormStore {
   }
 
   Future<MetaDatas> getMetadatas() async {
-
     print('loadt metadats');
 
     MetaDatasCache? cache = metatDatasCaches;
 
     DateTime? last = await getSheetInformation();
-    if( cache != null && last != null) {
-        if( last.isAtSameMomentAs(cache.modifiedTime))  {
-          print('use cache');
-          return cache.metaDatas;
+    if (cache != null && last != null) {
+      if (last.isAtSameMomentAs(cache.modifiedTime)) {
+        print('use cache');
+        return cache.metaDatas;
       }
     }
 
@@ -356,7 +352,6 @@ class FormStore {
     print('return metadats');
     metatDatasCaches = MetaDatasCache(metaDatas, last!);
     return metatDatasCaches!.metaDatas;
-
   }
 
   Future<MetaDatas> getMetadatasInternal() async {
@@ -376,20 +371,19 @@ class FormStore {
     final data = jsonDecode(response.body.toString());
     final List<dynamic> rows = data['values'];
 
-
     List<FormDescriptor> forms = parser.parseForms(rows);
-    LinkedHashMap<String, SheetDescriptor> sheets = parser.parseDescriptors(rows);
+    LinkedHashMap<String, SheetDescriptor> sheets =
+        parser.parseDescriptors(rows);
     return MetaDatas(sheets, forms);
-
   }
 
   Future<DateTime?> getSheetInformation() async {
-
-    if( lastCheck != null)  {
+    if (lastCheck != null) {
       DateTime now = DateTime.now();
       var duration = now.difference(lastCheck!).inSeconds;
-      if( now.difference(lastCheck!).inSeconds < 30)  {
-;        return lastCheck;
+      if (now.difference(lastCheck!).inSeconds < 30) {
+        ;
+        return lastCheck;
       }
     }
 
@@ -401,29 +395,23 @@ class FormStore {
     final driveApi = drive.DriveApi(authenticateClient);
 
     String? sheetFileId = await getSheetFileId(driveApi);
-    var file = await driveApi.files.get(
-        sheetFileId!, supportsAllDrives: true, $fields: 'modifiedTime');
+    var file = await driveApi.files
+        .get(sheetFileId!, supportsAllDrives: true, $fields: 'modifiedTime');
     if (file is drive.File) {
       return file.modifiedTime;
     }
-
-
 
     throw Exception("Spreadsheet not found");
   }
 
   Future<SheetDatas> loadDatas(String sheetName) async {
-
-
-
     bool reload = false;
     var cache = sheetCaches[sheetName];
 
     DateTime? last = await getSheetInformation();
-    if( cache != null && last != null) {
-      if( cache is SheetDatasCache) {
-        if( last.isAtSameMomentAs(cache.modifiedTime))  {
-
+    if (cache != null && last != null) {
+      if (cache is SheetDatasCache) {
+        if (last.isAtSameMomentAs(cache.modifiedTime)) {
           return cache.sheetContent;
         }
       }
@@ -432,18 +420,13 @@ class FormStore {
     print('load datas internal');
     SheetDatas datas = await loadDatasInternal(sheetName);
 
-    sheetCaches[ sheetName] = SheetDatasCache(datas, last!);
+    sheetCaches[sheetName] = SheetDatasCache(datas, last!);
 
-    SheetDatasCache storedCache = sheetCaches[ sheetName];
+    SheetDatasCache storedCache = sheetCaches[sheetName];
     return storedCache.sheetContent;
   }
 
-
-
   Future<SheetDatas> loadDatasInternal(String sheetName) async {
-
-
-
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -476,24 +459,22 @@ class FormStore {
       res.add(rowMap);
     }
 
-    var sheetDescriptor =
-        await loadDescriptor(sheetName);
+    var sheetDescriptor = await loadDescriptor(sheetName);
 
-    return SheetDatas(res, sheetDescriptor!.columns, sheetDescriptor!.refDisplayName);
+    return SheetDatas(
+        res, sheetDescriptor!.columns, sheetDescriptor!.refDisplayName);
   }
 
-  Future<FormDatas> loadForm(String? formSheetName, int formIndex, String? sheetItemID) async {
-
-
+  Future<FormDatas> loadForm(
+      String? formSheetName, int formIndex, String? sheetItemID) async {
     List<FormDescriptor> forms;
 
-    if( formSheetName != null)  {
-       var metadatas = await getMetadatas();
-       forms = metadatas.sheetDescriptors[formSheetName]!.formDescriptors;
+    if (formSheetName != null) {
+      var metadatas = await getMetadatas();
+      forms = metadatas.sheetDescriptors[formSheetName]!.formDescriptors;
     } else {
       forms = await getForms();
     }
-
 
     FormDescriptor form = forms[formIndex];
 
@@ -503,40 +484,23 @@ class FormStore {
 
     List<FilteredLine> filteredLines = [];
     for (int i = 0; i < datas.datas.length; i++) {
-      Map<String, String > referenceLabels = {};
+      Map<String, String> referenceLabels = {};
       bool insert = false;
       if (form.condition.isNotEmpty) {
 
-        var ast;
-        //String condition = "(CLIENT = CURRENT( )  OR (CLIENT > 's') )";
         String condition = form.condition;
-        try{
 
-        print("parse condition "+condition );
-         ast = filter_parser.parse(condition).value;
-        } catch (err) {
-            print('parsing error'+err.toString());
-        }
-        print("eval condition $condition");
+        Map<String, String?> variables = {};
 
-        var res;
-        Map<String,String?> variables = {};
-
-        for(String variable in datas.columns.keys)  {
+        for (String variable in datas.columns.keys) {
           variables[variable] = datas.datas[i][variable];
         }
-        if( sheetItemID != null) {
+        if (sheetItemID != null) {
           variables["_SHEET_ITEM_ID"] = sheetItemID;
         }
 
-        //{'NOM': datas.datas[i]['NOM'], 'CLIENT': datas.datas[i]['CLIENT'], "_CTX": '1'}
+        var res = evalExpression(condition, variables);
 
-        try {
-          res = ast.eval(variables);
-        }
-        catch (err) {
-          print('eval error'+err.toString());
-        }
         insert = res;
       } else {
         insert = true;
@@ -559,7 +523,6 @@ class FormStore {
     }
 
     return FormDatas(filteredLines, datas.columns, form);
-
 
 /*
 
@@ -609,23 +572,22 @@ class FormStore {
   }
 
   String? getLabelInternal(SheetDatas datas, int i) {
-     String? value;
+    String? value;
     for (String columnLabel in datas.referenceLabels) {
-      if( datas.datas[i][columnLabel] != null) {
+      if (datas.datas[i][columnLabel] != null) {
         if (value != null) {
           value += " ";
-        } else  {
+        } else {
           value = "";
         }
-       value = value + datas.datas[i][columnLabel]!;
+        value = value + datas.datas[i][columnLabel]!;
       }
     }
     return value;
   }
 
-  String  getReferenceLabelInternal(SheetDatas datas, String ref)  {
+  String getReferenceLabelInternal(SheetDatas datas, String ref) {
     for (int i = 0; i < datas.datas.length; i++) {
-      bool insert = false;
       String? currentRef = datas.datas[i]["ID"];
       if (currentRef != null) {
         if (currentRef == ref) {
@@ -640,32 +602,48 @@ class FormStore {
     return "-";
   }
 
-
   Future<String> getReferenceLabel(String sheetName, String ref) async {
     SheetDatas datas = await loadDatas(sheetName);
     return getReferenceLabelInternal(datas, ref);
   }
 
-  Future<DatasRow> loadRow(String sheetName, int index) async {
+  Future<DatasRow> loadRow(
+      String sheetName, int index, String? sheetItemID) async {
     SheetDatas sheet = await loadDatas(sheetName);
     Map<String, String> rowDatas = {};
     if (index != -1) {
       rowDatas = sheet.datas[index];
     }
     LinkedHashMap<String, ColumnDescriptor> columns = sheet.columns;
-    Map<String, String > referenceLabels = {};
+    Map<String, String> referenceLabels = {};
     Map<String, CustomImageState> rowFiles = {};
+
     for (int j = 0; j < columns.length; j++) {
       ColumnDescriptor desc = columns.values.elementAt(j);
       String columnName = columns.keys.elementAt(j);
 
-      if (desc.reference.isNotEmpty){
-        if( rowDatas[columnName] != null) {
-          String refLabel = await getReferenceLabel(
-              desc.reference, rowDatas[columnName]!);
+      // initialization
+      if (index == -1) {
+        String initExp = desc.defaultValue;
+        if (initExp.isNotEmpty) {
+          Map<String, String?> variables = {};
+          if (sheetItemID != null) {
+            variables["_SHEET_ITEM_ID"] = sheetItemID;
+          }
+          var res = evalExpression(initExp, variables);
+          if (res != null) {
+            rowDatas[columnName] = evalExpression(initExp, variables);
+          }
+        }
+      }
+
+      // Reference label
+      if (desc.reference.isNotEmpty) {
+        if (rowDatas[columnName] != null) {
+          String refLabel =
+              await getReferenceLabel(desc.reference, rowDatas[columnName]!);
           referenceLabels.putIfAbsent(columnName, () => refLabel);
         }
-
       }
       if (desc.type == "GOOGLE_IMAGE") {
         String? url = rowDatas[columnName];
@@ -678,9 +656,36 @@ class FormStore {
     }
 
     var metadatas = await getMetadatas();
-    List<FormDescriptor> forms = metadatas.sheetDescriptors[sheetName]!.formDescriptors;
+    List<FormDescriptor> forms =
+        metadatas.sheetDescriptors[sheetName]!.formDescriptors;
 
     return DatasRow(rowDatas, columns, rowFiles, referenceLabels, forms);
+  }
+
+  dynamic evalExpression(String initExp, Map<String, String?> variables) {
+    var ast;
+
+    try {
+      print("parse exp " + initExp);
+      ast = filter_parser.parse(initExp).value;
+    } catch (err) {
+      print('parsing error' + err.toString());
+      throw err;
+    }
+    print("eval condition $initExp");
+
+    var res;
+
+    //{'NOM': datas.datas[i]['NOM'], 'CLIENT': datas.datas[i]['CLIENT'], "_CTX": '1'}
+
+    try {
+      res = ast.eval(variables);
+    } catch (err) {
+      print('eval error' + err.toString());
+      throw err;
+    }
+
+    return res;
   }
 
   Future<String?> getSheetFileId(drive.DriveApi driveApi) async {

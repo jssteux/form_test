@@ -130,6 +130,7 @@ class Parser {
                 String label = "";
                 String reference = "";
                 bool mandatory = false;
+                String defaultValue = "";
 
                 for (var propertySheet in subStep.children) {
                   if (propertySheet is ParserProperty) {
@@ -150,6 +151,9 @@ class Parser {
                         mandatory = true;
                       }
                     }
+                    if (propertySheet.name == "DEFAULT") {
+                      defaultValue = propertySheet.value;
+                    }
                   }
                 }
 
@@ -157,7 +161,7 @@ class Parser {
                   columnsDescriptor.putIfAbsent(
                       name, () =>
                       ColumnDescriptor(
-                          name!, type, label, reference, mandatory));
+                          name!, type, label, reference, mandatory, defaultValue));
                   //print('add column$name $type');
                 }
               }
