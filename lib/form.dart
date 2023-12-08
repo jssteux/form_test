@@ -9,6 +9,7 @@ import 'package:form_test/form_store.dart';
 import 'package:form_test/main.dart';
 import 'package:form_test/row.dart';
 import 'package:form_test/sheet.dart';
+import 'package:form_test/src/reference_dialog.dart';
 import 'package:intl/intl.dart';
 import 'custom_image_widget.dart';
 import 'custom_image_widget_web.dart';
@@ -16,7 +17,8 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 // Define a custom Form widget.
 class MyCustomForm extends StatefulWidget {
-  const MyCustomForm(this.store,  this.sheetName, this.rowIndex, this.context, {super.key});
+  const MyCustomForm(this.store, this.sheetName, this.rowIndex, this.context,
+      {super.key});
   final FormStore store;
   final String sheetName;
   final int rowIndex;
@@ -45,6 +47,7 @@ class MyCustomFormState extends State<MyCustomForm> {
   Map<String, String> referencesValues = {};
   Map<String, String> referenceLabels = {};
   final _formKey = GlobalKey<FormState>();
+  Map<String, FocusNode> focusNodes = {};
 
   Map<String, TextEditingController> controllers = {};
 
@@ -54,70 +57,29 @@ class MyCustomFormState extends State<MyCustomForm> {
     return _comp(formIndex);
   }
 
+  @override
+  void initState() {
+    for (var columName in focusNodes.keys) {
+      focusNodes[columName]!.dispose();
+    }
+    super.initState();
+  }
+
   Widget _comp(int formIndex) {
     String columnName = columns.keys.elementAt(formIndex);
     ColumnDescriptor columDescriptor = columns[columnName]!;
 
     if (columDescriptor.reference.isNotEmpty) {
-      var myController = TextEditingController(text: referenceLabels[columnName]);
-      controllers.putIfAbsent(columnName, () => myController);
-      return TypeAheadFormField (
-        textFieldConfiguration: TextFieldConfiguration(
-            controller: myController,
-            decoration:  InputDecoration(
-              suffixIcon:
-              SizedBox(
-                  width: 100,
-                  child: Row(children: [
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () async {
-                        myController.text = "";
-                        referencesValues[columnName] = "";
-                      },
-                      icon: const Icon(Icons.clear),
-                    ),
-
-                  ])),
-              labelText: columDescriptor.label, //label text of field
-
-
-            )
-        ),
-        suggestionsCallback: (pattern) async {
-          // Replace with your backend call to get suggestions
-          List<FormSuggestionItem> suggestions = await widget.store.getSuggestions(columDescriptor.reference, pattern);
-          return suggestions;
-        },
-        itemBuilder: (context, suggestion) {
-          // Customize each suggestion item here
-          return ListTile(
-            title: Text(suggestion.displayName),
-          );
-        },
-        onSuggestionSelected: (suggestion) {
-          // Handle the user's selection
-          myController.text = suggestion.displayName;
-          referencesValues[columnName] = suggestion.ref;
-        },
-        onSuggestionsBoxToggle: (isOpen) async {
-          // Restore original value
-          if( isOpen == false)  {myController.text = await widget.store.getReferenceLabel(columDescriptor.reference,referencesValues[columnName]!);}
-          if( isOpen == true)   {myController.text = "";}
-          },
-
-          animationDuration: const Duration(milliseconds: 0)
-
-      );
-    } else if (columDescriptor.type == "STRING") {
-      var myController = TextEditingController(text: initialValues[columnName]);
+      var myController =
+          TextEditingController(text: referenceLabels[columnName]);
       controllers.putIfAbsent(columnName, () => myController);
       var textField = TextFormField(
           controller: myController,
+          readOnly: true,
           // The validator receives the text that the user has entered.
           validator: (value) {
-            if( formIndex == 1) {
-              if( columDescriptor.mandatory) {
+            if (formIndex == 1) {
+              if (columDescriptor.mandatory) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter some text';
                 }
@@ -125,23 +87,80 @@ class MyCustomFormState extends State<MyCustomForm> {
             }
             return null;
           },
-          decoration:  InputDecoration(
-              labelText: columDescriptor.label//label text of field
-          )
-
-      );
+          decoration: InputDecoration(
+              suffixIcon: SizedBox(
+                  width: 100,
+                  child: Row(children: [
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () async {
+                        await showDialog(
+                            context: context,
+                            builder: (BuildContext context) => ReferenceDialog(
+                                    widget.store, columDescriptor.reference,
+                                    (suggestion) {
+                                  myController.text = suggestion.displayName;
+                                  referencesValues[columnName] = suggestion.ref;
+                                }));
+                      },
+                      icon: const Icon(Icons.search),
+                    ),
+                    IconButton(
+                      onPressed: () async {
+                        myController.text = "";
+                        referencesValues[columnName] = "";
+                      },
+                      icon: const Icon(Icons.clear),
+                    ),
+                  ])),
+              labelText: columDescriptor.label //label text of field
+              ));
+      return textField;
+    } else if (columDescriptor.type == "STRING") {
+      var myController = TextEditingController(text: initialValues[columnName]);
+      controllers.putIfAbsent(columnName, () => myController);
+      focusNodes[columnName] = FocusNode();
+      var textField = TextFormField(
+          controller: myController,
+          focusNode: focusNodes[columnName],
+          // The validator receives the text that the user has entered.
+          validator: (value) {
+            if (formIndex == 1) {
+              if (columDescriptor.mandatory) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter some text';
+                }
+              }
+            }
+            return null;
+          },
+          decoration: InputDecoration(
+              suffixIcon: SizedBox(
+                  width: 100,
+                  child: Row(children: [
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () {
+                        focusNodes[columnName]!.unfocus();
+                        myController.text = "";
+                      },
+                      icon: const Icon(Icons.clear),
+                    ),
+                  ])),
+              labelText: columDescriptor.label //label text of field
+              ));
       return textField;
     } else if (columDescriptor.type == "DATE") {
       var myController = TextEditingController(text: initialValues[columnName]);
       controllers.putIfAbsent(columnName, () => myController);
+      focusNodes[columnName] = FocusNode();
       return TextFormField(
           controller: myController,
+          focusNode: focusNodes[columnName],
           decoration: InputDecoration(
-              suffixIcon:
-              SizedBox(
+              suffixIcon: SizedBox(
                   width: 100,
                   child: Row(children: [
-
                     const Spacer(),
                     IconButton(
                       onPressed: () async {
@@ -167,7 +186,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
                         if (pickedDate != null) {
                           String formattedDate =
-                          DateFormat('yyyy-MM-dd').format(pickedDate);
+                              DateFormat('yyyy-MM-dd').format(pickedDate);
                           //you can implement different kind of Date Format here according to your requirement
 
                           myController.text = formattedDate;
@@ -175,21 +194,19 @@ class MyCustomFormState extends State<MyCustomForm> {
                       },
                       icon: const Icon(Icons.today),
                     ),
-
                     IconButton(
-                      onPressed: () async {
+                      onPressed: () {
+                        focusNodes[columnName]!.unfocus();
                         myController.text = "";
                       },
                       icon: const Icon(Icons.clear),
                     ),
-
                   ])),
-
               labelText: columDescriptor.label //label text of field
-          ),
+              ),
           //readOnly: true, // when true user cannot edit text
           validator: (value) {
-            if( columDescriptor.mandatory) {
+            if (columDescriptor.mandatory) {
               if (value == null || value.isEmpty) {
                 return 'Please enter some text';
               } else {
@@ -199,84 +216,84 @@ class MyCustomFormState extends State<MyCustomForm> {
               }
             }
             return null;
-          }
-      )
-    ;
+          });
     } else if (columDescriptor.type == "GOOGLE_IMAGE") {
       if (kIsWeb) {
         return CustomImageFormFieldWeb(
-                (value) => files[formIndex.toString()] = value!,
-
-            files[formIndex.toString()],
-            columDescriptor.label,
-
+          (value) => files[formIndex.toString()] = value!,
+          files[formIndex.toString()],
+          columDescriptor.label,
         );
       } else {
-
-            return CustomImageFormField(
-                (value) => {
-              if (value != null)
-                files[formIndex.toString()] = value
-              else
-                null
-            },
-            widget.store,
-            files[formIndex.toString()],
-              columDescriptor.label,
-            validator: (value) {
-
-              if( columDescriptor.mandatory) {
-                if (value == null || value.content == null) {
-                  return 'Please enter a picture';
-                } else {
-                  try {} catch (e) {
-                    return 'incorrect date format';
-                  }
+        return CustomImageFormField(
+          (value) => {
+            if (value != null) files[formIndex.toString()] = value else null
+          },
+          widget.store,
+          files[formIndex.toString()],
+          columDescriptor.label,
+          validator: (value) {
+            if (columDescriptor.mandatory) {
+              if (value == null || value.content == null) {
+                return 'Please enter a picture';
+              } else {
+                try {} catch (e) {
+                  return 'incorrect date format';
                 }
               }
+            }
 
-              return null;
-            },
-            autovalidateMode: AutovalidateMode.onUserInteraction,);
-
-
+            return null;
+          },
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+        );
       }
     } else {
-       return const Text("");
+      return const Text("");
     }
   }
 
-  List<Widget>  buildWidgets() {
+  List<Widget> buildWidgets() {
     List<Widget> widgets = [];
     for (int i = 0; i < columns.length; i++) {
       widgets.add(_row(i));
     }
 
 
-    for (var i = 0; i< forms.length; i++)  {
-      var form = forms[i];
-      var label =
-      widgets.add(
-      ElevatedButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ListRoute(widget.store, widget.sheetName, i, Context(widget.sheetName, initialValues["ID"]),form.label)
-          ));
-        },
-        child: Text(form.label!)));
 
+    return widgets;
+  }
+
+  List<PopupMenuItem> buildForms() {
+    List<PopupMenuItem> widgets = [];
+    for (var i = 0; i < forms.length; i++) {
+      var form = forms[i];
+      widgets.add(PopupMenuItem<ListRoute>(
+          value: ListRoute(
+              widget.store,
+              widget.sheetName,
+              i,
+              Context(widget.sheetName, initialValues["ID"]),
+              form.label),
+
+          child: Text(form.label!)));
     }
 
     return widgets;
   }
+
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
     //print('build');
     // Build a Form widget using the _formKey created above.
     return FutureBuilder<DatasRow>(
-        future: widget.store.loadRow(widget.sheetName!, widget.rowIndex!, widget.context),
+        future: widget.store
+            .loadRow(widget.sheetName!, widget.rowIndex!, widget.context),
         builder: (context, AsyncSnapshot<DatasRow> snapshot) {
           if (snapshot.hasData) {
             columns = snapshot.data!.columns;
@@ -284,9 +301,7 @@ class MyCustomFormState extends State<MyCustomForm> {
 
             initialValues = snapshot.data!.datas;
 
-
             files = snapshot.data!.files;
-
 
             // references
             for (int i = 0; i < columns.length; i++) {
@@ -294,18 +309,21 @@ class MyCustomFormState extends State<MyCustomForm> {
               ColumnDescriptor columDescriptor = columns[columnName]!;
 
               if (columDescriptor.reference.isNotEmpty) {
-                if( snapshot.data!.datas[columnName] != null) {
-                  referencesValues[columnName] =   snapshot.data!.datas[columnName]! ;
-                } else  {
+                if (snapshot.data!.datas[columnName] != null) {
+                  referencesValues[columnName] =
+                      snapshot.data!.datas[columnName]!;
+                } else {
                   referencesValues[columnName] = "";
                 }
-            }}
+              }
+            }
 
-            referenceLabels =  snapshot.data!.initialsReferenceLabels;
+            referenceLabels = snapshot.data!.initialsReferenceLabels;
 
             return Form(
                 key: _formKey,
-                child: GestureDetector(    onTap: () => FocusManager.instance.primaryFocus?.unfocus(), child: Scaffold(
+
+                child: Scaffold(
                     body: SingleChildScrollView(
                       controller: _scrollController,
                       child: Column(
@@ -314,8 +332,20 @@ class MyCustomFormState extends State<MyCustomForm> {
                     ),
                     bottomNavigationBar: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
+
                         children: [
+                          PopupMenuButton(itemBuilder: (BuildContext context) {
+                            return buildForms();
+                          },
+    onSelected: (result) {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => result));}
+
+                          ),
+                          Spacer( ),
+
                           ElevatedButton(
+
                             onPressed: () {
                               // Validate returns true if the form is valid, or false otherwise.
                               if (_formKey.currentState!.validate()) {
@@ -330,7 +360,6 @@ class MyCustomFormState extends State<MyCustomForm> {
 
                                 Map<String, String> formValues = {};
 
-
                                 if (initialValues["ID"] != null) {
                                   formValues.putIfAbsent(
                                       "ID", () => initialValues["ID"]!);
@@ -339,31 +368,35 @@ class MyCustomFormState extends State<MyCustomForm> {
                                 for (int i = 0; i < columns.length; i++) {
                                   String columnName = columns.keys.elementAt(i);
                                   ColumnDescriptor columDescriptor =
-                                  columns[columnName]!;
+                                      columns[columnName]!;
 
                                   if (columDescriptor.reference.isNotEmpty) {
                                     formValues.putIfAbsent(columnName,
-                                            () => referencesValues[columnName]!);
-                                  } else  if (columDescriptor.type == "STRING" ||
+                                        () => referencesValues[columnName]!);
+                                  } else if (columDescriptor.type == "STRING" ||
                                       columDescriptor.type == "DATE") {
                                     formValues.putIfAbsent(columnName,
-                                            () => controllers[columnName]!.text);
-                                  } else if (columDescriptor.type == "GOOGLE_IMAGE") {
+                                        () => controllers[columnName]!.text);
+                                  } else if (columDescriptor.type ==
+                                      "GOOGLE_IMAGE") {
                                     if (initialValues[columnName] != null) {
                                       formValues.putIfAbsent(columnName,
-                                              () => initialValues[columnName]!);
+                                          () => initialValues[columnName]!);
                                     }
                                   }
                                 }
 
-                                widget.store.saveData(
-                                    context, widget.sheetName,formValues, columns, files);
+                                widget.store.saveData(context, widget.sheetName,
+                                    formValues, columns, files);
                               }
                             },
-
                             child: const Text('Validate'),
-                          )
-                        ]))));
+                          ),
+                          Spacer( )
+                        ]),
+
+
+                ));
           } else {
             return const CircularProgressIndicator();
           }
