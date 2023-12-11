@@ -222,8 +222,23 @@ class MyCustomFormState extends State<MyCustomForm> {
       if (kIsWeb) {
         return CustomImageFormFieldWeb(
           (value) => files[formIndex.toString()] = value!,
-          files[formIndex.toString()],
+          widget.store,
+          CustomImageState(false, initialValues[columnName], null),
           columDescriptor.label,
+          validator: (value) {
+            if (columDescriptor.mandatory) {
+              if (value == null || value.content == null) {
+                return 'Please enter a picture';
+              } else {
+                try {} catch (e) {
+                  return 'incorrect date format';
+                }
+              }
+            }
+
+            return null;
+          },
+
         );
       } else {
         return CustomImageFormField(

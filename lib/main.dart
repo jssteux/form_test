@@ -150,13 +150,15 @@ class _FirstRouteState extends State<FirstRoute> {
   // On the web, this must be called from an user interaction (button click).
   Future<void> _handleAuthorizeScopes() async {
     final bool isAuthorized = await _googleSignIn.requestScopes(scopes);
-    setState(() {
-      _isAuthorized = isAuthorized;
-    });
+
     if (isAuthorized) {
       store = FormStore(_account!, logger);
       forms = await store.getForms();
     }
+
+    setState(() {
+      _isAuthorized = isAuthorized;
+    });
   }
 
   Future<void> _handleSignOut() => _googleSignIn.disconnect();
