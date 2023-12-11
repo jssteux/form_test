@@ -327,9 +327,10 @@ class MyCustomFormState extends State<MyCustomForm> {
                 child: Scaffold(
                     body: SingleChildScrollView(
                       controller: _scrollController,
-                      child: Column(
+                      child: Padding( padding: const EdgeInsets.all(8.0), child:Column(
+
                         children: buildWidgets(),
-                      ),
+                      )),
                     ),
                     bottomNavigationBar: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
