@@ -642,6 +642,7 @@ class FormStore {
           referenceLabels.putIfAbsent(columnName, () => refLabel);
         }
       }
+      /*
       if (desc.type == "GOOGLE_IMAGE") {
         String? url = rowDatas[columnName];
         if (url != null && url.isNotEmpty) {
@@ -650,7 +651,14 @@ class FormStore {
               j.toString(), () => CustomImageState(false, content));
         }
       }
+      */
+
     }
+
+
+
+
+
 
     var metadatas = await getMetadatas();
     List<FormDescriptor> forms =
@@ -658,6 +666,23 @@ class FormStore {
 
     return DatasRow(rowDatas, columns, rowFiles, referenceLabels, forms);
   }
+
+
+  Future<Uint8List?> loadImage(String? url) async {
+    if (url != null && url.isNotEmpty) {
+      Uint8List? content = await read(url);
+      return  content;
+    }
+    return null;
+
+  }
+
+
+
+
+
+
+
 
   dynamic evalExpression(String initExp, Map<String, String?> variables, Context ctx) {
     var ast;

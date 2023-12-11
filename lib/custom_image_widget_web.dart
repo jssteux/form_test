@@ -41,7 +41,7 @@ class CustomImageFormFieldWeb extends FormField<CustomImageState?> {
                               .pickFiles(type: FileType.image, allowMultiple: false);
                           if (file != null) {
                             Uint8List bytes = file.files.first.bytes!;
-                            formFieldState.didChange( CustomImageState(true,  bytes));
+                            formFieldState.didChange( CustomImageState(true,  null, bytes));
 
                           }
                         },
@@ -49,7 +49,7 @@ class CustomImageFormFieldWeb extends FormField<CustomImageState?> {
                       ),
                       IconButton(
                         onPressed: () async {
-                          formFieldState.didChange(  CustomImageState(true, null));
+                          formFieldState.didChange(  CustomImageState(true, null, null));
                         },
                         icon: const Icon(Icons.clear),
                       ),

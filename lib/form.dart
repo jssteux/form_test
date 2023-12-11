@@ -118,6 +118,7 @@ class MyCustomFormState extends State<MyCustomForm> {
       return textField;
     } else if (columDescriptor.type == "STRING") {
       var myController = TextEditingController(text: initialValues[columnName]);
+
       controllers.putIfAbsent(columnName, () => myController);
       focusNodes[columnName] = FocusNode();
       var textField = TextFormField(
@@ -230,7 +231,7 @@ class MyCustomFormState extends State<MyCustomForm> {
             if (value != null) files[formIndex.toString()] = value else null
           },
           widget.store,
-          files[formIndex.toString()],
+          CustomImageState(false, initialValues[columnName], null),
           columDescriptor.label,
           validator: (value) {
             if (columDescriptor.mandatory) {

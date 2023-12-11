@@ -23,16 +23,42 @@ class CustomImageFormField extends FormField<CustomImageState?> {
       {super.key, super.validator,super.autovalidateMode}) : super(
       onSaved: onSaved,
       initialValue: initialValue,
-      builder: (formFieldState) {
-
+      builder: (formFieldState)  {
+        
         Widget? child;
 
-        if (formFieldState.value != null) {
+        if (formFieldState.value !=  null) {
           Uint8List? content = formFieldState.value!.content;
           if( content != null) {
             child = Image.memory(content);
+          } else  {
+            if (initialValue != null  && formFieldState.value!.content == null) {
+              Future.delayed(const Duration(seconds: 0), () async {
+                formFieldState.didChange(CustomImageState(true, formFieldState.value!.url, await store.loadImage(formFieldState.value!.url)));
+              });
+              child = const Center(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                  SizedBox(
+                  height: 20.0,
+                  width: 20.0,
+                  child: Center(
+                    child: CircularProgressIndicator(strokeWidth: 2,)
+                    )),
+                  ]
+
+                  )
+              );
+            }
           }
-        }
+        
+        
+      }
+
+ 
+
+
 
         child ??= Container();
 
@@ -42,28 +68,30 @@ class CustomImageFormField extends FormField<CustomImageState?> {
          InputDecorator(decoration: InputDecoration(
           suffixIcon:
             SizedBox(
-            width: 100,
-            child: Row(children: [
-              const Spacer(),
-                IconButton(
-                  onPressed: () async {
-                    FilePickerResult? file = await FilePicker.platform
-                        .pickFiles(type: FileType.image, allowMultiple: false);
-                    if (file != null) {
-                      File? pickedFile = File(file.files.first.path!);
-                      formFieldState.didChange( CustomImageState(true, await pickedFile.readAsBytes()));
-                    }
-                  },
-                  icon: const Icon(Icons.image),
-                ),
-              IconButton(
-                onPressed: () async {
-                  formFieldState.didChange(  CustomImageState(true, null));
-                },
-                icon: const Icon(Icons.clear),
+              width: 100,
+                child: Row(children: [
+
+                    IconButton(
+                      onPressed: () async {
+                        FilePickerResult? file = await FilePicker.platform
+                            .pickFiles(type: FileType.image, allowMultiple: false);
+                        if (file != null) {
+                          File? pickedFile = File(file.files.first.path!);
+                          formFieldState.didChange( CustomImageState(true, null, await pickedFile.readAsBytes()));
+                        }
+                      },
+                      icon: const Icon(Icons.image),
+                    ),
+                  IconButton(
+                    onPressed: () async {
+                      formFieldState.didChange(  CustomImageState(true, null, null));
+                    },
+                    icon: const Icon(Icons.clear),
+                  ),
+
+                ]),
               ),
 
-            ])),
             labelText: label, //label text of field
 
             errorText: formFieldState.errorText
