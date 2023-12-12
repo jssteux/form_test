@@ -78,6 +78,10 @@ class _FirstRouteState extends State<FirstRoute> {
 
     _googleSignIn.onCurrentUserChanged
         .listen((GoogleSignInAccount? account) async {
+/*
+      await Future.delayed(Duration(seconds: 5));
+      print('delay');
+*/
       // In mobile, being authenticated means being authorized...
       bool isAuthorized = account != null;
       // However, in the web...
@@ -90,11 +94,12 @@ class _FirstRouteState extends State<FirstRoute> {
 
       if (isAuthorized) {
         store = FormStore(account!, logger);
+        _account = account;
+        _isAuthorized = isAuthorized;
       }
 
       setState(() {
-        _account = account;
-        _isAuthorized = isAuthorized;
+
       });
     });
 
@@ -130,9 +135,12 @@ class _FirstRouteState extends State<FirstRoute> {
 
     setState(() {
       _isAuthorized = isAuthorized;
+
       if (isAuthorized) {
         store = FormStore(_account!, logger);
       }
+
+
     });
   }
 
@@ -179,25 +187,27 @@ class _FirstRouteState extends State<FirstRoute> {
           if (_isAuthorized && store!.spreadSheet != null) ...<Widget>[
             Row(
               children: [
-                Spacer(),
-                Text("Active Google Sheet"),
-                Spacer(),
-                Text(
+
+                Expanded(child: Align(alignment: Alignment.centerRight   ,child:Padding(
+    padding: const EdgeInsets.all(8.0), child: Text("Active Google Sheet")))),
+
+                Expanded(child: Align(alignment: Alignment.centerLeft   ,child:Padding(
+                    padding: const EdgeInsets.all(8.0), child: Row(children:[Text(
                   store!.spreadSheet!.name,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
-                ),
-                IconButton(
-                    onPressed: () async {
-                      setState(() {
-                        store!.spreadSheet = null;
-                        forms = null;
-                      });
-                    },
-                    icon: const Icon(Icons.grid_off_sharp)),
-                Spacer(),
+                )
+                  ,
+                  IconButton(
+                      onPressed: () async {
+                        setState(() {
+                          store!.spreadSheet = null;
+                          forms = null;
+                        });
+                      },
+                      icon: const Icon(Icons.grid_off_sharp))],)))),
               ],
             ),
             Row(children: [Expanded(child:Column(children: getForms()))])
@@ -211,10 +221,7 @@ class _FirstRouteState extends State<FirstRoute> {
               child: const Text('REQUEST PERMISSIONS'),
             ),
           ],
-          ElevatedButton(
-            onPressed: _handleSignOut,
-            child: const Text('SIGN OUT'),
-          ),
+
         ],
       );
     } else {
@@ -253,11 +260,19 @@ class _FirstRouteState extends State<FirstRoute> {
         FormDescriptor form = forms![formIndex];
 
 
+        int indice = formIndex % 2;
+        Alignment? align;
+        if( indice == 0)  {
+          align = Alignment.centerRight;
+        } else  {
+          align = Alignment.centerLeft;
+        }
 
-        Widget inner = Expanded(child:Column(children: [SizedBox(width: 180, child: Card(
+        Widget inner = Expanded(child:Align(
+            alignment: align, child:Column(children: [SizedBox(width: 180, child: Card(
             elevation: 2,
             margin:
-                const EdgeInsets.only(top: 25, bottom: 0, left: 10, right: 10),
+                const EdgeInsets.only(top: 15, bottom: 15, left: 8, right: 8),
             child: TextButton(
               child: Text(form.label),
               onPressed: () {
@@ -268,22 +283,24 @@ class _FirstRouteState extends State<FirstRoute> {
                           const Context(null, null), form.label)),
                 );
               },
-            )))]));
+            )))])));
 
-        int indice = formIndex % 2;
+
 
         // reinit
         if( indice == 0)  {
           if( inners.isNotEmpty) {
+
             widgets.add(Row (children: inners,));
+
           }
           inners = [];
         }
 
         inners.add(inner);
-
         }
        }
+
 
     if( inners.isNotEmpty) {
       widgets.add(Row (children: inners,));
@@ -302,7 +319,24 @@ class _FirstRouteState extends State<FirstRoute> {
         body: ConstrainedBox(
           constraints: const BoxConstraints.expand(),
           child: _buildBody(),
-        ));
+        ),
+        bottomNavigationBar: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+
+        children: [
+
+          if (_account != null) ...<Widget>[
+            ElevatedButton(
+
+              onPressed: _handleSignOut,
+              child: const Text('Signout'),
+            ),
+          ],
+
+
+        ]),
+
+    );
   }
 }
 
