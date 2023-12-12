@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:form_test/form_descriptor.dart';
 import 'package:form_test/list.dart';
 import 'package:form_test/logger.dart';
+import 'package:form_test/src/files/choose_file_dialog.dart';
+import 'package:form_test/src/files/file_item.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'form_store.dart';
@@ -11,25 +13,17 @@ import 'package:googleapis/drive/v3.dart' as drive;
 import 'src/sign_in_button.dart';
 //import 'package:ensemble_ts_interpreter/parser/newjs_interpreter.dart';
 
-
 /// The type of the onClick callback for the (mobile) Sign In Button.
 typedef HandleSignInFn = Future<void> Function();
 
-
 void main() {
-
-
   runApp(const MaterialApp(
     title: 'Navigation Basics',
     home: FirstRoute(),
   ));
 }
 
-
-
-
-
-test()  {
+test() {
   /*
 Map<String, dynamic> context = {
   'age': 9,
@@ -44,7 +38,6 @@ String code = """
 //print (context['age']);
 }
 
-
 /// The scopes required by this application.
 const List<String> scopes = <String>[
   'email',
@@ -56,23 +49,16 @@ GoogleSignIn _googleSignIn = GoogleSignIn(
   scopes: scopes,
 );
 
-
 class FirstRoute extends StatefulWidget {
-
   const FirstRoute({super.key});
 
   @override
   State<FirstRoute> createState() => _FirstRouteState();
 }
 
-
-
-
-
-
 class _FirstRouteState extends State<FirstRoute> {
   GoogleSignInAccount? _account;
-  late FormStore store;
+  FormStore? store;
   bool _isAuthorized = false; // has granted permissions?
   Logger logger = Logger();
   late List<FormDescriptor>? forms;
@@ -81,10 +67,11 @@ class _FirstRouteState extends State<FirstRoute> {
   void initState() {
     super.initState();
 
-    if( kIsWeb) {
+    if (kIsWeb) {
       _googleSignIn = GoogleSignIn(
         // Optional clientId
-        clientId: '114273143423-v83roghb06tj7c9tkjpap51b141s1mlq.apps.googleusercontent.com',
+        clientId:
+            '114273143423-v83roghb06tj7c9tkjpap51b141s1mlq.apps.googleusercontent.com',
         scopes: scopes,
       );
     }
@@ -101,18 +88,14 @@ class _FirstRouteState extends State<FirstRoute> {
       // Now that we know that the user can access the required scopes, the app
       // can call the REST API.
 
-
       if (isAuthorized) {
         store = FormStore(account!, logger);
-        forms = await store.getForms();
       }
 
       setState(() {
         _account = account;
         _isAuthorized = isAuthorized;
       });
-
-
     });
 
     // In the web, _googleSignIn.signInSilently() triggers the One Tap UX.
@@ -121,13 +104,7 @@ class _FirstRouteState extends State<FirstRoute> {
     // and the Google Sign In button together to "reduce friction and improve
     // sign-in rates" ([docs](https://developers.google.com/identity/gsi/web/guides/display-button#html)).
     _googleSignIn.signInSilently();
-
-
-
   }
-
-
-
 
   // This is the on-click handler for the Sign In button that is rendered by Flutter.
   //
@@ -151,17 +128,22 @@ class _FirstRouteState extends State<FirstRoute> {
   Future<void> _handleAuthorizeScopes() async {
     final bool isAuthorized = await _googleSignIn.requestScopes(scopes);
 
-    if (isAuthorized) {
-      store = FormStore(_account!, logger);
-      forms = await store.getForms();
-    }
-
     setState(() {
       _isAuthorized = isAuthorized;
+      if (isAuthorized) {
+        store = FormStore(_account!, logger);
+      }
     });
   }
 
-  Future<void> _handleSignOut() => _googleSignIn.disconnect();
+  _handleSignOut() {
+    _googleSignIn.disconnect();
+    setState(() {
+      _account = null;
+      _isAuthorized = false;
+      store = null;
+    });
+  }
 
   Widget _buildBody() {
     final GoogleSignInAccount? user = _account;
@@ -177,9 +159,48 @@ class _FirstRouteState extends State<FirstRoute> {
             title: Text(user.displayName ?? ''),
             subtitle: Text(user.email),
           ),
-          const Text('Signed in successfully.'),
-          if (_isAuthorized) ...<Widget>[
-            Column( children :getForms())
+          if (_isAuthorized && store!.spreadSheet == null) ...<Widget>[
+            IconButton(
+                onPressed: () async {
+                  await showDialog(
+                      context: context,
+                      builder: (BuildContext context) =>
+                          ChooseFileDialog(store!, (file) async {
+                            // Init store
+                            store = FormStore(_account!, logger);
+                            store!.spreadSheet = file;
+                            forms = await store!.getForms();
+
+                            setState(() {});
+                          }));
+                },
+                icon: const Icon(Icons.search)),
+          ],
+          if (_isAuthorized && store!.spreadSheet != null) ...<Widget>[
+            Row(
+              children: [
+                Spacer(),
+                Text("Active Google Sheet"),
+                Spacer(),
+                Text(
+                  store!.spreadSheet!.name,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                IconButton(
+                    onPressed: () async {
+                      setState(() {
+                        store!.spreadSheet = null;
+                        forms = null;
+                      });
+                    },
+                    icon: const Icon(Icons.grid_off_sharp)),
+                Spacer(),
+              ],
+            ),
+            Row(children: [Expanded(child:Column(children: getForms()))])
           ],
           if (!_isAuthorized) ...<Widget>[
             // The user has NOT Authorized all required scopes.
@@ -204,45 +225,73 @@ class _FirstRouteState extends State<FirstRoute> {
           const Text('You are not currently signed in.'),
           // This method is used to separate mobile from web code with conditional exports.
           // See: src/sign_in_button.dart
-          if( kIsWeb) ...<Widget>[
+          if (kIsWeb) ...<Widget>[
             buildSignInButton(
               onPressed: _handleSignIn,
-            ),],
+            ),
+          ],
 
-          if( !kIsWeb) ...<Widget>[
-          ElevatedButton(
-          onPressed: _handleSignIn,
-          child: const Text('Auth'),
-          ),]
+          if (!kIsWeb) ...<Widget>[
+            ElevatedButton(
+              onPressed: _handleSignIn,
+              child: const Text('Auth'),
+            ),
+          ]
         ],
       );
     }
   }
 
-  List<Widget> getForms()  {
+  List<Widget> getForms() {
     List<Widget> widgets = [];
 
-    if( forms != null) {
-      for(int formIndex = 0; formIndex< forms!.length; formIndex++)  {
+    List<Widget> inners=[];
+
+    if (forms != null) {
+      for (int formIndex = 0; formIndex < forms!.length; formIndex++) {
+
         FormDescriptor form = forms![formIndex];
-        widgets.add(ElevatedButton(
-          child: Text(form.label),
-          onPressed: () {
 
 
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ListRoute(store, null, formIndex, const Context(null, null), form.label)),
-            );
-          },
-        ));
-      }
+
+        Widget inner = Expanded(child:Column(children: [SizedBox(width: 180, child: Card(
+            elevation: 2,
+            margin:
+                const EdgeInsets.only(top: 25, bottom: 0, left: 10, right: 10),
+            child: TextButton(
+              child: Text(form.label),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ListRoute(store!, null, formIndex,
+                          const Context(null, null), form.label)),
+                );
+              },
+            )))]));
+
+        int indice = formIndex % 2;
+
+        // reinit
+        if( indice == 0)  {
+          if( inners.isNotEmpty) {
+            widgets.add(Row (children: inners,));
+          }
+          inners = [];
+        }
+
+        inners.add(inner);
+
+        }
+       }
+
+    if( inners.isNotEmpty) {
+      widgets.add(Row (children: inners,));
     }
+
+
     return widgets;
   }
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +304,6 @@ class _FirstRouteState extends State<FirstRoute> {
           child: _buildBody(),
         ));
   }
-
 }
 
 class FormRoute extends StatelessWidget {
@@ -264,8 +312,8 @@ class FormRoute extends StatelessWidget {
   final String sheetName;
   final int rowIndex;
 
-
-  const FormRoute(  this.store, this.sheetName, this.rowIndex, this.context,  {super.key });
+  const FormRoute(this.store, this.sheetName, this.rowIndex, this.context,
+      {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -273,10 +321,8 @@ class FormRoute extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Formulaire saisie'),
       ),
-      body: Center(
-          child:  MyCustomForm( store, sheetName, rowIndex, this.context)
-        ),
-
+      body:
+          Center(child: MyCustomForm(store, sheetName, rowIndex, this.context)),
     );
   }
 }
@@ -285,7 +331,7 @@ class Context {
   final String? sheetName;
   final String? sheetItemID;
 
-  const Context( this.sheetName, this.sheetItemID);
+  const Context(this.sheetName, this.sheetItemID);
 }
 
 class ListRoute extends StatelessWidget {
@@ -295,18 +341,17 @@ class ListRoute extends StatelessWidget {
   final int formIndex;
   final Context context;
 
-  const ListRoute(  this.store, this.sheetName, this.formIndex, this.context, this.label, {super.key });
+  const ListRoute(
+      this.store, this.sheetName, this.formIndex, this.context, this.label,
+      {super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(label),
-      ),
-      body: Center(
-            child:  MyCustomList( store, sheetName, formIndex, this.context))
-
-      );
-
+        appBar: AppBar(
+          title: Text(label),
+        ),
+        body: Center(
+            child: MyCustomList(store, sheetName, formIndex, this.context)));
   }
 }

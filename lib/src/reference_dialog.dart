@@ -50,6 +50,8 @@ class ReferenceDialogState extends State<ReferenceDialog> {
           // Customize each suggestion item here
           return ListTile(
             title: Text(suggestion.displayName),
+
+
           );
         },
         onSuggestionSelected: (suggestion) {

@@ -8,6 +8,7 @@ import 'package:form_test/custom_image_state.dart';
 import 'package:form_test/form_descriptor.dart';
 import 'package:form_test/logger.dart';
 import 'package:form_test/main.dart';
+import 'package:form_test/src/files/file_item.dart';
 import 'package:form_test/src/filters/filter_parser.dart';
 import 'package:form_test/src/parser/parser.dart';
 import 'package:form_test/row.dart';
@@ -25,6 +26,7 @@ class FormStore {
   final sign_in.GoogleSignInAccount account;
   final Logger logger;
   final Parser parser;
+  FileItem? spreadSheet ;
   DateTime? lastCheck;
   Map<String, dynamic> sheetCaches = {};
   MetaDatasCache? metatDatasCaches;
@@ -203,7 +205,7 @@ class FormStore {
     final driveApi = drive.DriveApi(authenticateClient);
 
     //search main
-    String? sheetFileId = await getSheetFileId(driveApi);
+    String? sheetFileId = getSheetFileId();
 
     String encodedRange = Uri.encodeComponent("$sheetName!A1:D1");
 
@@ -360,7 +362,7 @@ class FormStore {
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
 
-    String? sheetFileId = await getSheetFileId(driveApi);
+    String? sheetFileId = await getSheetFileId();
 
     final encodedRange = Uri.encodeComponent("_METADATAS!A1:G1000");
 
@@ -394,7 +396,7 @@ class FormStore {
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
 
-    String? sheetFileId = await getSheetFileId(driveApi);
+    String? sheetFileId = getSheetFileId();
     var file = await driveApi.files
         .get(sheetFileId!, supportsAllDrives: true, $fields: 'modifiedTime');
     if (file is drive.File) {
@@ -432,7 +434,7 @@ class FormStore {
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
 
-    String? sheetFileId = await getSheetFileId(driveApi);
+    String? sheetFileId = getSheetFileId();
 
     final encodedRange = Uri.encodeComponent("$sheetName!A1:E1000");
 
@@ -720,30 +722,72 @@ class FormStore {
     return res;
   }
 
-  Future<String?> getSheetFileId(drive.DriveApi driveApi) async {
-    //search main
-    drive.Drive? current = await getFolder(driveApi);
-    String? id = current!.id!;
+   getSheetFileId()  {
+    return spreadSheet!.id;
+  }
 
-    drive.File? sheetFile;
-    var drives = await driveApi.files.list(
-        corpora: 'drive',
-        driveId: id,
+
+
+
+
+
+  Future<List<FileItem>> allFileList( String? pattern) async {
+
+    final authHeaders = await account.authHeaders;
+    final authenticateClient = GoogleAuthClient(authHeaders);
+    final driveApi = drive.DriveApi(authenticateClient);
+    const  sheetMimeType = "application/vnd.google-apps.spreadsheet";
+
+    List<FileItem> res = [];
+    drive.FileList files;
+
+    if( pattern == null || pattern.isEmpty) {
+      files = await driveApi.files.list(
+          $fields: '*',
         includeItemsFromAllDrives: true,
-        supportsAllDrives: true);
-    if (drives.files != null) {
-      var items = drives.files;
-      if (items != null) {
-        for (var item in items) {
-          if (item.name == "main") {
-            if (item.mimeType == 'application/vnd.google-apps.spreadsheet') {
-              sheetFile = item;
+        supportsAllDrives: true,
+        q: "mimeType = '$sheetMimeType'"
+
+      );
+    } else  {
+
+      files = await driveApi.files.list(
+          $fields: '*',
+          includeItemsFromAllDrives: true,
+          supportsAllDrives: true,
+        q: "name contains '*$pattern*' and mimeType = '$sheetMimeType'"
+      );
+    }
+
+    /*
+  static const  _folderType = "application/vnd.google-apps.spreadsheet";
+  final isFolder = file.mimeType == _folderType;
+ */
+    
+    for( var file in files.files!) {
+        String path = "";
+
+        var parents = file.parents;
+        while( parents != null) {
+
+          for (String parentId in parents!) {
+            var parent = await driveApi.files
+                .get(parentId!, $fields: '*', supportsAllDrives: true);
+            if (parent is drive.File) {
+              path = "/${parent.name!}$path" ;
+                  parents = parent.parents;
+            } else  {
+              parents = null;
             }
           }
         }
-      }
+
+        res.add(FileItem(file.id!, file.name!, path));
+
     }
-    final sheetFileId = sheetFile!.id;
-    return sheetFileId;
+
+    return res;
   }
+
+
 }
