@@ -85,7 +85,7 @@ class MyCustomListState extends State<MyCustomList> {
       label ??= "";
 
 
-      widgets.add(Expanded(child: Text(label!)));
+      widgets.add(Expanded(child: Text(label)));
     }
     return widgets;
   }

@@ -1,11 +1,9 @@
-import 'dart:math' as math;
-
 import 'package:petitparser/petitparser.dart';
 
 import 'ast.dart';
 import 'common.dart';
 
-var filter_parser = () {
+var filterParser = () {
   final builder = ExpressionBuilder<Expression>();
   builder
     ..primitive((digit().plus() &

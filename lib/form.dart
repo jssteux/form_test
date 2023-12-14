@@ -8,12 +8,11 @@ import 'package:form_test/form_descriptor.dart';
 import 'package:form_test/form_store.dart';
 import 'package:form_test/main.dart';
 import 'package:form_test/row.dart';
-import 'package:form_test/sheet.dart';
 import 'package:form_test/src/reference_dialog.dart';
 import 'package:intl/intl.dart';
 import 'custom_image_widget.dart';
 import 'custom_image_widget_web.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
+
 
 // Define a custom Form widget.
 class MyCustomForm extends StatefulWidget {
@@ -292,7 +291,7 @@ class MyCustomFormState extends State<MyCustomForm> {
               Context(widget.sheetName, initialValues["ID"]),
               form.label),
 
-          child: Text(form.label!)));
+          child: Text(form.label)));
     }
 
     return widgets;
@@ -309,7 +308,7 @@ class MyCustomFormState extends State<MyCustomForm> {
     // Build a Form widget using the _formKey created above.
     return FutureBuilder<DatasRow>(
         future: widget.store
-            .loadRow(widget.sheetName!, widget.rowIndex!, widget.context),
+            .loadRow(widget.sheetName, widget.rowIndex, widget.context),
         builder: (context, AsyncSnapshot<DatasRow> snapshot) {
           if (snapshot.hasData) {
             columns = snapshot.data!.columns;
@@ -359,7 +358,7 @@ class MyCustomFormState extends State<MyCustomForm> {
         .push(MaterialPageRoute(builder: (context) => result));}
 
                           ),
-                          Spacer( ),
+                          const Spacer( ),
 
                           ElevatedButton(
 
@@ -409,7 +408,7 @@ class MyCustomFormState extends State<MyCustomForm> {
                             },
                             child: const Text('Validate'),
                           ),
-                          Spacer( )
+                          const Spacer( )
                         ]),
 
 

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:form_test/form_store.dart';
-import 'package:form_test/sheet.dart';
 import 'package:form_test/src/files/file_item.dart';
-import 'package:googleapis/drive/v3.dart' as drive;
-import 'package:vs_scrollbar/vs_scrollbar.dart';
+
 
 class ChooseFileDialog extends StatefulWidget {
   final FormStore store;
@@ -48,7 +46,7 @@ class ChooseFileDialogState extends State<ChooseFileDialog> {
         suggestionsCallback: (pattern) async {
           // Replace with your backend call to get suggestions
           List<FileItem> suggestions = await widget.store
-              .allFileList(pattern);
+              .allFileList(null, pattern);
           return suggestions;
         },
         itemBuilder: (context, file) {

@@ -202,7 +202,6 @@ class Parser {
 
   List<FormDescriptor>  parseForms( List<dynamic> rows) {
 
-    List<FormDescriptor> forms = [];
 
     List<dynamic> elements = [];
 

@@ -202,7 +202,7 @@ class FormStore {
     final authenticateClient = GoogleAuthClient(authHeaders);
     // Fonctionne avec l'utilisation d'un compte de service
     //final authenticateClient = await obtainServiceCredentials();
-    final driveApi = drive.DriveApi(authenticateClient);
+
 
     //search main
     String? sheetFileId = getSheetFileId();
@@ -312,13 +312,13 @@ class FormStore {
 
     // update cache
     SheetDatasCache cache = sheetCaches[sheetName];
-    if (cache != null) {
+
       if (index != -1) {
         cache.sheetContent.datas[index] = formValues;
       } else {
         cache.sheetContent.datas.add(formValues);
       }
-    }
+
 
     if (context.mounted) {
       Navigator.of(context).pop(true);
@@ -360,7 +360,7 @@ class FormStore {
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
-    final driveApi = drive.DriveApi(authenticateClient);
+
 
     String? sheetFileId = await getSheetFileId();
 
@@ -382,9 +382,9 @@ class FormStore {
   Future<DateTime?> getSheetInformation() async {
     if (lastCheck != null) {
       DateTime now = DateTime.now();
-      var duration = now.difference(lastCheck!).inSeconds;
+
       if (now.difference(lastCheck!).inSeconds < 30) {
-        ;
+
         return lastCheck;
       }
     }
@@ -407,7 +407,7 @@ class FormStore {
   }
 
   Future<SheetDatas> loadDatas(String sheetName) async {
-    bool reload = false;
+
     var cache = sheetCaches[sheetName];
 
     DateTime? last = await getSheetInformation();
@@ -432,7 +432,7 @@ class FormStore {
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
-    final driveApi = drive.DriveApi(authenticateClient);
+
 
     String? sheetFileId = getSheetFileId();
 
@@ -464,7 +464,7 @@ class FormStore {
     var sheetDescriptor = await loadDescriptor(sheetName);
 
     return SheetDatas(
-        res, sheetDescriptor!.columns, sheetDescriptor!.refDisplayName);
+        res, sheetDescriptor!.columns, sheetDescriptor.refDisplayName);
   }
 
   Future<FormDatas> loadForm(
@@ -691,7 +691,7 @@ class FormStore {
 
     try {
       print("parse exp " + initExp);
-      ast = filter_parser.parse(initExp).value;
+      ast = filterParser.parse(initExp).value;
     } catch (err) {
       print('parsing error' + err.toString());
       throw err;
@@ -731,32 +731,52 @@ class FormStore {
 
 
 
-  Future<List<FileItem>> allFileList( String? pattern) async {
+
+
+
+  Future<List<FileItem>> allFileList( String? id, String? pattern) async {
 
     final authHeaders = await account.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
     const  sheetMimeType = "application/vnd.google-apps.spreadsheet";
 
+    List<drive.File> qFiles = [];
     List<FileItem> res = [];
-    drive.FileList files;
 
-    if( pattern == null || pattern.isEmpty) {
-      files = await driveApi.files.list(
-          $fields: '*',
-        includeItemsFromAllDrives: true,
-        supportsAllDrives: true,
-        q: "mimeType = '$sheetMimeType'"
 
-      );
-    } else  {
+    if( id != null) {
+      var file = await driveApi.files
+          .get(id, $fields: '*', supportsAllDrives: true);
+        if (file is drive.File) {
+          qFiles.add(file);
+        }
 
-      files = await driveApi.files.list(
-          $fields: '*',
-          includeItemsFromAllDrives: true,
-          supportsAllDrives: true,
-        q: "name contains '*$pattern*' and mimeType = '$sheetMimeType'"
-      );
+      } else {
+      drive.FileList files;
+      if (pattern == null || pattern.isEmpty) {
+        files = await driveApi.files.list(
+            $fields: '*',
+            includeItemsFromAllDrives: true,
+            supportsAllDrives: true,
+            q: "mimeType = '$sheetMimeType'"
+
+        );
+      } else {
+        files = await driveApi.files.list(
+            $fields: '*',
+            includeItemsFromAllDrives: true,
+            supportsAllDrives: true,
+            q: "name contains '*$pattern*' and mimeType = '$sheetMimeType'"
+        );
+      }
+
+      for( var file in files.files!) {
+          if (file is drive.File) {
+            qFiles.add(file);
+          }
+      }
+
     }
 
     /*
@@ -764,15 +784,15 @@ class FormStore {
   final isFolder = file.mimeType == _folderType;
  */
     
-    for( var file in files.files!) {
+    for( drive.File file in qFiles) {
         String path = "";
 
         var parents = file.parents;
         while( parents != null) {
 
-          for (String parentId in parents!) {
+          for (String parentId in parents) {
             var parent = await driveApi.files
-                .get(parentId!, $fields: '*', supportsAllDrives: true);
+                .get(parentId, $fields: '*', supportsAllDrives: true);
             if (parent is drive.File) {
               path = "/${parent.name!}$path" ;
                   parents = parent.parents;

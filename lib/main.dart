@@ -6,12 +6,12 @@ import 'package:form_test/src/files/choose_file_dialog.dart';
 import 'package:form_test/src/files/file_item.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'form_store.dart';
 import 'form.dart';
 import 'package:flutter/foundation.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'src/sign_in_button.dart';
-//import 'package:ensemble_ts_interpreter/parser/newjs_interpreter.dart';
 
 /// The type of the onClick callback for the (mobile) Sign In Button.
 typedef HandleSignInFn = Future<void> Function();
@@ -63,6 +63,7 @@ class _FirstRouteState extends State<FirstRoute> {
   Logger logger = Logger();
   List<FormDescriptor>? forms;
   bool loading = false;
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
   @override
   void initState() {
@@ -85,8 +86,8 @@ class _FirstRouteState extends State<FirstRoute> {
 */
 
       // However, in the web...
-      if (kIsWeb ) {
-        if( account != null) {
+      if (kIsWeb) {
+        if (account != null) {
           _account = account;
           setState(() {});
           _handleAuthorizeScopes();
@@ -101,12 +102,15 @@ class _FirstRouteState extends State<FirstRoute> {
       bool isAuthorized = account != null;
 
       if (isAuthorized) {
-        store = FormStore(account!, logger);
         _account = account;
         _isAuthorized = isAuthorized;
+
+        setState(() {});
+
+        await loadSheet();
       }
 
-      setState(() {});
+
     });
 
     // In the web, _googleSignIn.signInSilently() triggers the One Tap UX.
@@ -115,6 +119,36 @@ class _FirstRouteState extends State<FirstRoute> {
     // and the Google Sign In button together to "reduce friction and improve
     // sign-in rates" ([docs](https://developers.google.com/identity/gsi/web/guides/display-button#html)).
     _googleSignIn.signInSilently();
+  }
+
+  Future<void> loadSheet() async {
+
+    final SharedPreferences prefs = await _prefs;
+    String? spreadSheetId = prefs.getString("spreadSheetId");
+
+    // Init store
+    try {
+      store = FormStore(_account!, logger);
+
+      if (spreadSheetId != null) {
+        loading = true;
+        setState(() {});
+        List<FileItem> fileList = await store!.allFileList(
+            spreadSheetId, null);
+        if (fileList.length == 1) {
+          store!.spreadSheet = fileList[0];
+        }
+        forms = await store!.getForms();
+      }
+    } catch(e)  {
+      print(e.toString());
+      prefs.clear();
+
+    }
+
+
+    loading = false;
+   setState(() {});
   }
 
   // This is the on-click handler for the Sign In button that is rendered by Flutter.
@@ -139,17 +173,27 @@ class _FirstRouteState extends State<FirstRoute> {
   Future<void> _handleAuthorizeScopes() async {
     final bool isAuthorized = await _googleSignIn.requestScopes(scopes);
 
-    setState(() {
-      _isAuthorized = isAuthorized;
 
-      if (isAuthorized) {
-        store = FormStore(_account!, logger);
-      }
-    });
+    if (isAuthorized) {
+
+      setState(() {
+        _isAuthorized = true;
+      });
+
+
+      await loadSheet();
+
+
+    }
+
   }
 
-  _handleSignOut() {
+  _handleSignOut() async {
     _googleSignIn.disconnect();
+
+    final SharedPreferences prefs = await _prefs;
+    prefs.clear();
+
     setState(() {
       _account = null;
       _isAuthorized = false;
@@ -167,133 +211,33 @@ class _FirstRouteState extends State<FirstRoute> {
         mainAxisSize: MainAxisSize.max,
         children: <Widget>[
           Expanded(
-              flex:0,
-              child:ListTile(
-
-            leading: GoogleUserCircleAvatar(
-              identity: user,
-            ),
-            title: Text(user.displayName ?? ''),
-            subtitle: Text(user.email),
-          )),
+              flex: 0,
+              child: ListTile(
+                leading: GoogleUserCircleAvatar(
+                  identity: user,
+                ),
+                title: Text(user.displayName ?? ''),
+                subtitle: Text(user.email),
+              )),
           if (_isAuthorized) ...<Widget>[
             Expanded(
                 flex: 1,
                 child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-
-                  SizedBox( height: 70 , child: Card(
-                      elevation: 1,
-                      color: Colors.white70,
-
-                      child: Column(mainAxisAlignment : MainAxisAlignment.center, children: [
-                        if (store!.spreadSheet == null) ...<Widget>[
-                          Row(children: [
-                            Expanded(
-                                child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Padding(
-                                        padding: const EdgeInsets.all(2.0),
-                                        child: Text(
-                                            (loading == false)
-                                                ? "No sheet loaded"
-                                                : "Loading sheet",
-                                            style: const TextStyle(
-                                                fontSize: 16))))),
-                            Expanded(
-                                child:
-                                    Align(alignment: Alignment.centerLeft,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(2.0),
-                                      child: (loading == false)
-                                          ? IconButton(
-                                              onPressed: () async {
-                                                await showDialog(
-                                                    context: context,
-                                                    builder: (BuildContext
-                                                            context) =>
-                                                        ChooseFileDialog(store!,
-                                                            (file) async {
-                                                          loading = true;
-                                                          setState(() {});
-                                                          Future.delayed(
-                                                              Duration(
-                                                                  seconds: 1),
-                                                              () async {
-                                                            // Init store
-                                                            store = FormStore(
-                                                                _account!,
-                                                                logger);
-                                                            store!.spreadSheet =
-                                                                file;
-
-                                                            forms = await store!
-                                                                .getForms();
-
-                                                            loading = false;
-
-                                                            setState(() {});
-                                                          });
-                                                        }));
-                                              },
-                                              icon: const Icon(Icons.search))
-                                          : const SizedBox(
-                                              width:20,
-                                              height: 20,
-                                              child: Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              )),
-                                            ),
-                                    )))
-                          ])
-                        ] else ...<Widget>[
-                          Row(
-                            children: [
-                              Expanded(
-                                  child: Align(
-                                      alignment: Alignment.centerRight,
-                                      child: Padding(
-                                          padding: const EdgeInsets.all(2.0),
-                                          child: Text("Active sheet :",
-                                              style: const TextStyle(
-                                                  fontSize: 16))))),
-                              Expanded(
-                                  child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Padding(
-                                          padding: const EdgeInsets.all(2.0),
-                                          child: Row(
-                                            children: [
-                                              Text(store!.spreadSheet!.name,
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16)),
-                                              IconButton(
-                                                  onPressed: () async {
-                                                    setState(() {
-                                                      store!.spreadSheet = null;
-                                                      forms = null;
-                                                    });
-                                                  },
-                                                  icon: const Icon(Icons.clear))
-                                            ],
-                                          )))),
-                            ],
-                          )
-                        ]
-                      ]))),
-                  Expanded(  child: Column(mainAxisAlignment: MainAxisAlignment.center,children: getForms()))
-                ]))
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      getStatusCard(),
+                      Expanded(
+                          child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: getForms()))
+                    ]))
           ],
           if (!_isAuthorized) ...<Widget>[
             // The user has NOT Authorized all required scopes.
             // (Mobile users may never see this button!)
-            const Text('Additional permissions needed to read your spreadsheets.'),
+            const Text(
+                'Additional permissions needed to read your spreadsheets.'),
             ElevatedButton(
               onPressed: _handleAuthorizeScopes,
               child: const Text('Request permissions'),
@@ -326,6 +270,98 @@ class _FirstRouteState extends State<FirstRoute> {
     }
   }
 
+  SizedBox getStatusCard() {
+    return SizedBox(
+        height: 70,
+        child: Card(
+            elevation: 1,
+            color: Colors.white70,
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              if (store!.spreadSheet == null) ...<Widget>[
+                Row(children: [
+                  Expanded(
+                      child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                              padding: const EdgeInsets.all(2.0),
+                              child: Text(
+                                  (loading == false)
+                                      ? "No sheet loaded"
+                                      : "Loading sheet",
+                                  style: const TextStyle(fontSize: 16))))),
+                  Expanded(
+                      child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.all(2.0),
+                            child: (loading == false)
+                                ? IconButton(
+                                    onPressed: () async {
+                                      await showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) =>
+                                              ChooseFileDialog(store!,
+                                                  (file) async {
+
+                                                  final SharedPreferences prefs = await _prefs;
+                                                  prefs.setString("spreadSheetId", file.id);
+
+                                                  await loadSheet();
+                                              }));
+                                    },
+                                    icon: const Icon(Icons.search))
+                                : const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: Center(
+                                        child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    )),
+                                  ),
+                          )))
+                ])
+              ] else ...<Widget>[
+                Row(
+                  children: [
+                    const Expanded(
+                        child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Padding(
+                                padding: EdgeInsets.all(2.0),
+                                child: Text("Active sheet :",
+                                    style: TextStyle(fontSize: 16))))),
+                    Expanded(
+                        child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Row(
+                                  children: [
+                                    Text(store!.spreadSheet!.name,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16)),
+                                    IconButton(
+                                        onPressed: () async {
+                                          final SharedPreferences prefs = await _prefs;
+                                          prefs.clear();
+
+                                          setState(() {
+                                            store!.spreadSheet = null;
+                                            forms = null;
+
+                                          });
+                                        },
+                                        icon: const Icon(Icons.clear))
+                                  ],
+                                )))),
+                  ],
+                )
+              ]
+            ])));
+  }
+
   List<Widget> getForms() {
     List<Widget> widgets = [];
 
@@ -336,7 +372,7 @@ class _FirstRouteState extends State<FirstRoute> {
         FormDescriptor form = forms![formIndex];
 
         int indice = formIndex % 2;
-        Alignment? align;
+        Alignment align;
         if (indice == 0) {
           align = Alignment.centerRight;
         } else {
@@ -377,6 +413,9 @@ class _FirstRouteState extends State<FirstRoute> {
     }
 
     if (inners.isNotEmpty) {
+      if (inners.length == 1) {
+        inners.add(const Spacer());
+      }
       widgets.add(Row(
         children: inners,
       ));
@@ -403,7 +442,10 @@ class _FirstRouteState extends State<FirstRoute> {
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         if (_account != null) ...<Widget>[
           ElevatedButton(
-            onPressed: _handleSignOut,
+            onPressed: () async {
+               _handleSignOut();
+
+              },
             child: const Text('Signout'),
           ),
         ],
