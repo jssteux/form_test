@@ -13,7 +13,7 @@ var filterParser = () {
         .flatten('number expected')
         .trim()
         .map(_createValue))
-    ..primitive((char("'") & letter().plus() & char("'")
+    ..primitive((char("'") & noneOf("'").plus()  & char("'")
         .optional())
         .flatten('string expected')
         .trim()
@@ -50,7 +50,10 @@ var filterParser = () {
   builder.group()
     ..left(string('>').trim(), (a, op, b) => SupBinary(a,b))
     ..left(string('=').trim(), (a, op, b) => EqualsBinary(a,b))
-    ..left(string('OR').trim(), (a, op, b) => Binary('OR', a, b, (x, y) => x || y));
+    ..left(string('OR').trim(), (a, op, b) => Binary('OR', a, b, (x, y) => x || y))
+    ..left(string('AND').trim(), (a, op, b) => Binary('OR', a, b, (x, y) => x && y))
+    ..left(string('LIKE').trim(), (a, op, b) => LikeBinary(a,b));
+
   return resolve(builder.build()).end();
 }();
 

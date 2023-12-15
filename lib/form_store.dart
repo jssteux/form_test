@@ -467,8 +467,13 @@ class FormStore {
         res, sheetDescriptor!.columns, sheetDescriptor.refDisplayName);
   }
 
+
+
+
+
+
   Future<FormDatas> loadForm(
-      String? formSheetName, int formIndex, Context ctx) async {
+      String? formSheetName, int formIndex, String pattern, Context ctx) async {
     List<FormDescriptor> forms;
 
     if (formSheetName != null) {
@@ -484,22 +489,39 @@ class FormStore {
 
     SheetDatas datas = await loadDatas(sheetName);
 
+
+    // Apply pattern to condition
+    String fullCondition;
+    String patternCondition;
+    if(pattern.isNotEmpty) {
+      patternCondition = "FULLTEXT LIKE '$pattern'";
+      if( form.condition.isNotEmpty)  {
+        String condition = form.condition;
+        fullCondition =  "( ($condition) AND ($patternCondition) )";
+      } else  {
+        fullCondition = patternCondition;
+      }
+    }
+    else {
+      fullCondition = form.condition;
+    }
+
+
+
     List<FilteredLine> filteredLines = [];
     for (int i = 0; i < datas.datas.length; i++) {
       Map<String, String> referenceLabels = {};
       bool insert = false;
-      if (form.condition.isNotEmpty) {
 
-        String condition = form.condition;
 
-        Map<String, String?> variables = {};
+      if (fullCondition.isNotEmpty) {
+        String condition = fullCondition;
 
-        for (String variable in datas.columns.keys) {
-          variables[variable] = datas.datas[i][variable];
-        }
+        Map<String, String?> variables = await prepareVariables(datas, i);
 
-        var res = evalExpression(condition, variables, ctx);
-
+        print('before $fullCondition');
+        var res = evalExpression(fullCondition, variables, ctx);
+        print('after $fullCondition');
         insert = res;
       } else {
         insert = true;
@@ -541,6 +563,34 @@ class FormStore {
     print('Unknown exception: $e');
   }
 */
+  }
+
+  Future<Map<String, String?>> prepareVariables(SheetDatas datas, int i) async {
+
+    Map<String, String?> variables = {};
+
+    String fullText = "";
+
+    for (String variable in datas.columns.keys) {
+      variables[variable] = datas.datas[i][variable];
+
+      ColumnDescriptor? desc = datas.columns[variable];
+
+      if( desc != null && desc.reference.isNotEmpty) {
+        String refLabel = await getReferenceLabel(
+            desc.reference, datas.datas[i][variable]!);
+        fullText = "$fullText $refLabel";
+      } else  {
+
+      if( variables[variable] != null) {
+        fullText = "$fullText ${variables[variable]!}";
+      }
+
+      }
+    }
+
+    variables["FULLTEXT"] = fullText;
+    return variables;
   }
 
   Future<List<FormSuggestionItem>> getSuggestions(

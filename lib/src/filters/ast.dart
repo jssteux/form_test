@@ -170,8 +170,29 @@ class EqualsBinary extends Expression {
       return false;
     }
   }
-
-
-
 }
 
+
+
+/// A binary expression.
+class LikeBinary extends Expression {
+  LikeBinary(this.left, this.right);
+  final Expression left;
+  final Expression right;
+
+
+  @override
+  String toString() => 'Like Binary';
+
+  @override
+  dynamic eval(Map<String, dynamic> variables) {
+    dynamic leftE = left.eval(variables);
+    dynamic righE = right.eval(variables);
+
+    if( leftE is String && righE is String) {
+      return leftE.toUpperCase().contains(righE.toUpperCase());
+    } else  {
+      return false;
+    }
+  }
+}

@@ -427,6 +427,9 @@ class _FirstRouteState extends State<FirstRoute> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // without this, pop when keyboard is displayed
+      // laied to a moving effect
+        resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Google Sign In'),
       ),
