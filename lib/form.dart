@@ -13,7 +13,6 @@ import 'package:intl/intl.dart';
 import 'custom_image_widget.dart';
 import 'custom_image_widget_web.dart';
 
-
 // Define a custom Form widget.
 class MyCustomForm extends StatefulWidget {
   const MyCustomForm(this.store, this.sheetName, this.rowIndex, this.context,
@@ -63,6 +62,9 @@ class MyCustomFormState extends State<MyCustomForm> {
     }
     super.initState();
   }
+
+
+
 
   Widget _comp(int formIndex) {
     String columnName = columns.keys.elementAt(formIndex);
@@ -237,7 +239,6 @@ class MyCustomFormState extends State<MyCustomForm> {
 
             return null;
           },
-
         );
       } else {
         return CustomImageFormField(
@@ -274,8 +275,6 @@ class MyCustomFormState extends State<MyCustomForm> {
       widgets.add(_row(i));
     }
 
-
-
     return widgets;
   }
 
@@ -284,23 +283,13 @@ class MyCustomFormState extends State<MyCustomForm> {
     for (var i = 0; i < forms.length; i++) {
       var form = forms[i];
       widgets.add(PopupMenuItem<ListRoute>(
-          value: ListRoute(
-              widget.store,
-              widget.sheetName,
-              i,
-              Context(widget.sheetName, initialValues["ID"]),
-              form.label),
-
+          value: ListRoute(widget.store, widget.sheetName, i,
+              Context(widget.sheetName, initialValues["ID"]), form.label),
           child: Text(form.label)));
     }
 
     return widgets;
   }
-
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -337,82 +326,100 @@ class MyCustomFormState extends State<MyCustomForm> {
 
             return Form(
                 key: _formKey,
+                // Without out this, pop in appBar has a blink effect due to keyboard
+                // height if the focus is set on a text field
+                child : WillPopScope(onWillPop: () async {
 
-                child: Scaffold(
-                    body: SingleChildScrollView(
-                      controller: _scrollController,
-                      child: Padding( padding: const EdgeInsets.all(8.0), child:Column(
+                  FocusScope.of(context).unfocus();
+                  await Future.delayed(const Duration(milliseconds: 300));
 
-                        children: buildWidgets(),
-                      )),
-                    ),
-                    bottomNavigationBar: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  return true;
+                },
 
-                        children: [
-                          PopupMenuButton(itemBuilder: (BuildContext context) {
-                            return buildForms();
-                          },
-    onSelected: (result) {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => result));}
+                child:
+              Scaffold(
+                resizeToAvoidBottomInset: false,
+                  body: SingleChildScrollView(
+                    controller: _scrollController,
+                    child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: buildWidgets(),
+                        )),
+                  ),
+                  bottomNavigationBar: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        (forms.isNotEmpty)
+                            ? PopupMenuButton(
+                                itemBuilder: (BuildContext context) {
+                                return buildForms();
+                              }, onSelected: (result) {
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) => result));
+                              })
+                            : Spacer(),
 
-                          ),
-                          const Spacer( ),
+                        Container(
+                            margin: EdgeInsets.only(right: 15),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // Validate returns true if the form is valid, or false otherwise.
+                                if (_formKey.currentState!.validate()) {
+                                  // If the form is valid, display a snackbar. In the real world,
+                                  // you'd often call a server or save the information in a database.
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Processing Data')),
+                                  );
 
-                          ElevatedButton(
+                                  _formKey.currentState!.save();
 
-                            onPressed: () {
-                              // Validate returns true if the form is valid, or false otherwise.
-                              if (_formKey.currentState!.validate()) {
-                                // If the form is valid, display a snackbar. In the real world,
-                                // you'd often call a server or save the information in a database.
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Processing Data')),
-                                );
+                                  Map<String, String> formValues = {};
 
-                                _formKey.currentState!.save();
+                                  if (initialValues["ID"] != null) {
+                                    formValues.putIfAbsent(
+                                        "ID", () => initialValues["ID"]!);
+                                  }
 
-                                Map<String, String> formValues = {};
+                                  for (int i = 0; i < columns.length; i++) {
+                                    String columnName =
+                                        columns.keys.elementAt(i);
+                                    ColumnDescriptor columDescriptor =
+                                        columns[columnName]!;
 
-                                if (initialValues["ID"] != null) {
-                                  formValues.putIfAbsent(
-                                      "ID", () => initialValues["ID"]!);
-                                }
-
-                                for (int i = 0; i < columns.length; i++) {
-                                  String columnName = columns.keys.elementAt(i);
-                                  ColumnDescriptor columDescriptor =
-                                      columns[columnName]!;
-
-                                  if (columDescriptor.reference.isNotEmpty) {
-                                    formValues.putIfAbsent(columnName,
-                                        () => referencesValues[columnName]!);
-                                  } else if (columDescriptor.type == "STRING" ||
-                                      columDescriptor.type == "DATE") {
-                                    formValues.putIfAbsent(columnName,
-                                        () => controllers[columnName]!.text);
-                                  } else if (columDescriptor.type ==
-                                      "GOOGLE_IMAGE") {
-                                    if (initialValues[columnName] != null) {
+                                    if (columDescriptor.reference.isNotEmpty) {
                                       formValues.putIfAbsent(columnName,
-                                          () => initialValues[columnName]!);
+                                          () => referencesValues[columnName]!);
+                                    } else if (columDescriptor.type ==
+                                            "STRING" ||
+                                        columDescriptor.type == "DATE") {
+                                      formValues.putIfAbsent(columnName,
+                                          () => controllers[columnName]!.text);
+                                    } else if (columDescriptor.type ==
+                                        "GOOGLE_IMAGE") {
+                                      if (initialValues[columnName] != null) {
+                                        formValues.putIfAbsent(columnName,
+                                            () => initialValues[columnName]!);
+                                      }
                                     }
                                   }
+
+                                  widget.store.saveData(
+                                      context,
+                                      widget.sheetName,
+                                      formValues,
+                                      columns,
+                                      files);
                                 }
-
-                                widget.store.saveData(context, widget.sheetName,
-                                    formValues, columns, files);
-                              }
-                            },
-                            child: const Text('Validate'),
-                          ),
-                          const Spacer( )
-                        ]),
-
-
-                ));
+                              },
+                              child: const Padding(
+                                  padding: EdgeInsets.only(left: 20, right: 20),
+                                  child: Text('Save')),
+                            )),
+                      ]),
+                )));
           } else {
             return const CircularProgressIndicator();
           }

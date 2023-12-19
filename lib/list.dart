@@ -35,12 +35,12 @@ class MyCustomListState extends State<MyCustomList> {
   late FormDatas sheet;
   Key _refreshKey = UniqueKey();
   FocusNode focusNode = FocusNode();
-  String searchPattern="";
+  String searchPattern = "";
   Timer? timer;
 
   @override
   void dispose() {
-    if( timer != null)  {
+    if (timer != null) {
       timer!.cancel();
       timer = null;
     }
@@ -50,25 +50,45 @@ class MyCustomListState extends State<MyCustomList> {
 
   Widget _comp(int index) {
     var current = index;
-    return GestureDetector(
-        child: ListTile(title: Row(children: buildInnerWidgets(index))),
-        onTap: () {
+
+    return Dismissible(
+      key: Key(index.toString()),
+      background: Container(color: Colors.red),
+      onDismissed: (direction) async {
+        // Remove the item from the data source.
+
+        String id = sheet.lines[current].datas["ID"]!;
+        sheet.lines.removeAt(current);
+        await widget.store.removeData(context, sheet.form.sheetName, id);
+
+        setState(() {
           initialScrollOffset = _scrollController.offset;
-          //print('offset :$initialScrollOffset' );
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => FormRoute(
-                    widget.store,
-                    sheet.form.sheetName,
-                    sheet.lines[current].originalIndex,
-                    widget.context)),
-          ).then((value) => setState(() {
-                if (value == true) {
-                  _refreshKey = UniqueKey();
-                }
-              }));
         });
+
+        // Then show a snackbar.
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('item dismissed')));
+      },
+      child: GestureDetector(
+          child: ListTile(title: Row(children: buildInnerWidgets(index))),
+          onTap: () {
+            initialScrollOffset = _scrollController.offset;
+            //print('offset :$initialScrollOffset' );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => FormRoute(
+                      widget.store,
+                      sheet.form.sheetName,
+                      sheet.lines[current].originalIndex,
+                      widget.context)),
+            ).then((value) => setState(() {
+              if (value == true) {
+                _refreshKey = UniqueKey();
+              }
+            }));
+          }),
+    );
 /*
       trailing: IconButton(
         icon: const Icon(Icons.delete),
@@ -128,15 +148,9 @@ class MyCustomListState extends State<MyCustomList> {
   }
 
   Widget buildSearchItem() {
-
-
-
-
-
     var textField = TextFormField(
         controller: searchController,
         focusNode: focusNode,
-
         decoration: InputDecoration(
           suffixIcon: SizedBox(
               width: 100,
@@ -153,26 +167,20 @@ class MyCustomListState extends State<MyCustomList> {
         ));
 
     searchController.addListener(() {
+      if (timer != null) {
+        timer!.cancel();
+        timer = null;
+      }
 
-        if (timer != null) {
-          timer!.cancel();
-          timer = null;
-        }
+      timer = Timer(const Duration(milliseconds: 300), () {
+        print("timer");
 
-        timer = Timer(const Duration(milliseconds: 300), () {
-
-          print("timer");
-
-        if( searchPattern != searchController.text) {
+        if (searchPattern != searchController.text) {
           setState(() {
             searchPattern = searchController.text;
           });
         }
-
-        }
-
-        );
-
+      });
     });
 
     return textField;
@@ -180,14 +188,13 @@ class MyCustomListState extends State<MyCustomList> {
 
   @override
   Widget build(BuildContext context) {
-    // Build a Form widget using the _formKey created above.
 
 
 
     return FutureBuilder<FormDatas>(
         key: _refreshKey,
-        future: widget.store
-            .loadForm(widget.sheetName, widget.formIndex, searchPattern, widget.context),
+        future: widget.store.loadForm(
+            widget.sheetName, widget.formIndex, searchPattern, widget.context),
         builder: (context, AsyncSnapshot<FormDatas> snapshot) {
           if (snapshot.hasData) {
             _items = snapshot.data!.lines;
@@ -196,69 +203,102 @@ class MyCustomListState extends State<MyCustomList> {
                 ScrollController(initialScrollOffset: initialScrollOffset);
             return Form(
                 key: _formKey,
-                child: Scaffold(
-                    body: Column(children: <Widget>[
-                      buildSearchItem(),
-                      Expanded(
-                          flex: 1,
-                          child: Column(children: <Widget>[
-                            ListTile(title: Row(children: buildTitles())),
-                            Expanded(
-                                child: VsScrollbar(
-                              controller: _scrollController,
-                              showTrackOnHover: true,
-                              // default false
-                              isAlwaysShown: true,
-                              // default false
-                              scrollbarFadeDuration:
-                                  const Duration(milliseconds: 500),
-                              // default : Duration(milliseconds: 300)
-                              scrollbarTimeToFade:
-                                  const Duration(milliseconds: 800),
-                              // default : Duration(milliseconds: 600)
-                              style: VsScrollbarStyle(
-                                hoverThickness: 10.0,
-                                // default 12.0
-                                radius: const Radius.circular(12),
-                                // default Radius.circular(8.0)
-                                thickness: 10.0,
-                                // [ default 8.0 ]
-                                color: Colors.purple
-                                    .shade900, // default ColorScheme Theme
-                              ),
+                // Without out this, pop in appBar has a blink effect due to keyboard
+                // height if the focus is set on a text field
+                child : WillPopScope(onWillPop: () async {
 
-                              child: SingleChildScrollView(
-                                key: Key(_items.length.toString()),
-                                controller: _scrollController,
-                                child: Column(
-                                  children: buildLines(),
-                                ),
-                              ),
-                            ))
-                          ]))
-                    ]),
-                    bottomNavigationBar: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => FormRoute(
-                                        widget.store,
-                                        sheet.form.sheetName,
-                                        -1,
-                                        widget.context)),
-                              ).then((value) => setState(() {
-                                    if (value == true) {
-                                      _refreshKey = UniqueKey();
-                                    }
-                                  }));
-                            },
-                            child: const Text('Add'),
-                          )
-                        ])));
+                  FocusScope.of(context).unfocus();
+                  await Future.delayed(const Duration(milliseconds: 300));
+
+                  return true;
+                  },
+                child: Scaffold(
+                  resizeToAvoidBottomInset: false,
+                  body: Stack(
+                      children: <Widget>[
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: <Widget>[
+                              buildSearchItem(),
+                              Expanded(
+                                  flex: 1,
+                                  child: Column(children: <Widget>[
+                                    ListTile(title: Row(children: buildTitles())),
+                                    Expanded(
+                                        child: VsScrollbar(
+                                          controller: _scrollController,
+                                          showTrackOnHover: true,
+                                          // default false
+                                          isAlwaysShown: true,
+                                          // default false
+                                          scrollbarFadeDuration:
+                                          const Duration(milliseconds: 500),
+                                          // default : Duration(milliseconds: 300)
+                                          scrollbarTimeToFade:
+                                          const Duration(milliseconds: 800),
+                                          // default : Duration(milliseconds: 600)
+                                          style: VsScrollbarStyle(
+                                            hoverThickness: 10.0,
+                                            // default 12.0
+                                            radius: const Radius.circular(12),
+                                            // default Radius.circular(8.0)
+                                            thickness: 10.0,
+                                            // [ default 8.0 ]
+                                            color: Colors.purple
+                                                .shade900, // default ColorScheme Theme
+                                          ),
+
+                                          child: SingleChildScrollView(
+                                            key: Key(_items.length.toString()),
+                                            controller: _scrollController,
+                                            child: Column(
+                                              children: buildLines(),
+                                            ),
+                                          ),
+                                        ))
+                                  ]))
+                            ]),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+
+
+                              Padding(padding:EdgeInsets.all(5),child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => FormRoute(
+                                              widget.store,
+                                              sheet.form.sheetName,
+                                              -1,
+                                              widget.context)),
+                                    ).then((value) {
+
+                                      FocusScope.of(context).unfocus();
+
+                                      //print("keyboard" + MediaQuery.of(context).viewInsets.bottom.toString());
+                                      setState(() {
+                                      if (value == true) {
+
+
+                                        _refreshKey = UniqueKey();
+                                      }
+
+                                    });});
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    shape: const CircleBorder(),
+                                    padding: const EdgeInsets.all(16),
+                                    backgroundColor: Colors.blue, // <-- Button color
+                                  ),
+                                  child: const Icon(Icons.add, color: Colors.white),
+                                )
+                              ]))
+                            ])
+                      ]),
+                )));
           } else {
             return const CircularProgressIndicator();
           }

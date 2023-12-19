@@ -21,7 +21,6 @@ class ReferenceDialog extends StatefulWidget {
 class ReferenceDialogState extends State<ReferenceDialog> {
 
   final _formKey = GlobalKey<FormState>();
-  String? referencesValues;
 
 
   List<Widget> buildWidget() {
@@ -55,18 +54,11 @@ class ReferenceDialogState extends State<ReferenceDialog> {
           );
         },
         onSuggestionSelected: (suggestion) {
-          // Handle the user's selection
-//          myController.text = suggestion.displayName;
-//          referencesValues = suggestion.ref;
           widget.onSelect(suggestion);
           Navigator.of(context).pop();
         },
         onSuggestionsBoxToggle: (isOpen) async {
-          // Restore original value
-          if (isOpen == false) {
-            myController.text = await widget.store.getReferenceLabel(
-                widget.columnReference, referencesValues!);
-          }
+
           if (isOpen == true) {
             myController.text = "";
           }

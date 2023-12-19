@@ -207,18 +207,34 @@ class _FirstRouteState extends State<FirstRoute> {
     if (user != null) {
       // The user is Authenticated
       return Column(
-        mainAxisAlignment: MainAxisAlignment.start,
+
+          children: <Widget>[
+            Row(
+
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         mainAxisSize: MainAxisSize.max,
         children: <Widget>[
-          Expanded(
-              flex: 0,
-              child: ListTile(
+
+              Expanded(child: ListTile(
                 leading: GoogleUserCircleAvatar(
                   identity: user,
                 ),
                 title: Text(user.displayName ?? ''),
                 subtitle: Text(user.email),
               )),
+          ElevatedButton(
+            onPressed: () {
+              _handleSignOut();
+            },
+            style: ElevatedButton.styleFrom(
+              shape: const CircleBorder(),
+              padding: const EdgeInsets.all(10),
+              backgroundColor: Colors.blue, // <-- Button color
+            ),
+            child: const Icon(Icons.logout, color: Colors.white),
+          ),
+          ]),
+
           if (_isAuthorized) ...<Widget>[
             Expanded(
                 flex: 1,
@@ -262,7 +278,7 @@ class _FirstRouteState extends State<FirstRoute> {
           if (!kIsWeb) ...<Widget>[
             ElevatedButton(
               onPressed: _handleSignIn,
-              child: const Text('Auth'),
+              child: const Text('Sign in'),
             ),
           ]
         ],
@@ -441,18 +457,6 @@ class _FirstRouteState extends State<FirstRoute> {
             ),
             child: _buildBody()),
       ),
-      bottomNavigationBar:
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        if (_account != null) ...<Widget>[
-          ElevatedButton(
-            onPressed: () async {
-               _handleSignOut();
-
-              },
-            child: const Text('Signout'),
-          ),
-        ],
-      ]),
     );
   }
 }

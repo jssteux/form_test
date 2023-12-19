@@ -10,8 +10,6 @@ import 'package:form_test/src/parser/parser_property.dart';
 class Parser {
   const Parser();
   ParserContext parse(List elements, List<dynamic> rows, int index, int step) {
-
-
     int newStep = -1;
     int nameIndice = -1;
     List<dynamic> rowCells = rows.elementAt(index);
@@ -36,18 +34,18 @@ class Parser {
 
     // Get new step
     if (name.isNotEmpty) {
-      newStep = nameIndice ;
+      newStep = nameIndice;
     }
 
     //print("parse $index $newStep $step");
 
     // empty line
     if (newStep == -1) {
-      index =  index + 1;
+      index = index + 1;
     }
 
     // Return to previous level and preserve index
-    if( newStep <= step) {
+    if (newStep <= step) {
       //print("return to previous name=$name value=$value");
       return ParserContext(newStep, index);
     }
@@ -55,7 +53,7 @@ class Parser {
     // property
     if (name.isNotEmpty && value.isNotEmpty) {
       //print("addElement name=$name value=$value");
-      elements.add( ParserProperty(name, value));
+      elements.add(ParserProperty(name, value));
       return ParserContext(newStep, index + 1);
     }
 
@@ -66,14 +64,14 @@ class Parser {
       elements.add(level);
       //print("addChild name=$name value=$value");
 
-      index = index +1;
+      index = index + 1;
       bool endChild = false;
 
-      while( index < rows.length && endChild == false) {
+      while (index < rows.length && endChild == false) {
         //print("parseChild $name $index ");
         ParserContext ctx = parse(childElements, rows, index, newStep);
         //print("returnedChild $name  "+ ctx.step.toString());
-        if( ctx.step <= newStep) {
+        if (ctx.step <= newStep) {
           endChild = true;
         }
         index = ctx.index;
@@ -83,39 +81,31 @@ class Parser {
     return ParserContext(newStep, index);
   }
 
-
-
-
-
-  LinkedHashMap<String,SheetDescriptor> parseDescriptors( List<dynamic> rows) {
-
-    LinkedHashMap<String,SheetDescriptor> descriptors = LinkedHashMap();
+  LinkedHashMap<String, SheetDescriptor> parseDescriptors(List<dynamic> rows) {
+    LinkedHashMap<String, SheetDescriptor> descriptors = LinkedHashMap();
 
     List<dynamic> elements = [];
 
     ParserContext ctx = const ParserContext(-1, 0);
 
     // Loop over rows
-    while ( ctx.index < rows.length) {
+    while (ctx.index < rows.length) {
       int index = ctx.index;
-      ctx =  parse(elements, rows, index, -1);
+      ctx = parse(elements, rows, index, -1);
     }
 
-
     // parse results
-    for ( var element in elements){
-      if( element is ParserLevel) {
+    for (var element in elements) {
+      if (element is ParserLevel) {
         if (element.name == "SHEET") {
-
-          String?  sheetName;
-          LinkedHashMap<String,
-              ColumnDescriptor> columnsDescriptor = LinkedHashMap();
+          String? sheetName;
+          LinkedHashMap<String, ColumnDescriptor> columnsDescriptor =
+              LinkedHashMap();
           List<String> referenceLabels = [];
-
 
           for (var subStep in element.children) {
             if (subStep is ParserProperty) {
-              if (subStep.name == "NAME" ) {
+              if (subStep.name == "NAME") {
                 sheetName = subStep.value;
               }
             }
@@ -131,6 +121,7 @@ class Parser {
                 String reference = "";
                 bool mandatory = false;
                 String defaultValue = "";
+                bool cascadeDelete = false;
 
                 for (var propertySheet in subStep.children) {
                   if (propertySheet is ParserProperty) {
@@ -146,6 +137,11 @@ class Parser {
                     if (propertySheet.name == "REFERENCE") {
                       reference = propertySheet.value;
                     }
+                    if (propertySheet.name == "CASCADE_DELETE") {
+                      if ("TRUE" == propertySheet.value) {
+                        cascadeDelete = true;
+                      }
+                    }
                     if (propertySheet.name == "MANDATORY") {
                       if ("TRUE" == propertySheet.value) {
                         mandatory = true;
@@ -159,120 +155,89 @@ class Parser {
 
                 if (name != null) {
                   columnsDescriptor.putIfAbsent(
-                      name, () =>
-                      ColumnDescriptor(
-                          name!, type, label, reference, mandatory, defaultValue));
+                      name,
+                      () => ColumnDescriptor(name!, type, label, reference,
+                          cascadeDelete, mandatory, defaultValue));
                   //print('add column$name $type');
                 }
               }
+            }
 
-              if (subStep.name == "DISPLAY") {
-                String name = "";
-
-                for (var propertySheet in subStep.children) {
-                  if (propertySheet is ParserProperty) {
-                    if (propertySheet.name == "NAME") {
-                      name = propertySheet.value;
-                    }
-                  }
-                }
-
-
-                referenceLabels.add(name);
+            if (subStep is ParserProperty) {
+              if (subStep.name == "REF_COLS") {
+                referenceLabels = subStep.value.split(",");
                 //print('add column$name $type');
-
               }
             }
           }
 
-          if( sheetName != null) {
+          if (sheetName != null) {
+            List<FormDescriptor> sheetForms =
+                parseFormsInternal(element.children);
 
-            List<FormDescriptor> sheetForms = parseFormsInternal(element.children);
-
-            descriptors.putIfAbsent(sheetName, () =>
-                SheetDescriptor(columnsDescriptor, sheetForms, referenceLabels));
+            descriptors.putIfAbsent(
+                sheetName,
+                () => SheetDescriptor(
+                    columnsDescriptor, sheetForms, referenceLabels));
           }
-
         }
       }
-   }
+    }
 
     return descriptors;
   }
 
-  List<FormDescriptor>  parseForms( List<dynamic> rows) {
-
-
+  List<FormDescriptor> parseForms(List<dynamic> rows) {
     List<dynamic> elements = [];
 
     ParserContext ctx = const ParserContext(-1, 0);
 
     // Loop over rows
-    while ( ctx.index < rows.length) {
+    while (ctx.index < rows.length) {
       int index = ctx.index;
-      ctx =  parse(elements, rows, index, -1);
+      ctx = parse(elements, rows, index, -1);
     }
 
-    return( parseFormsInternal(elements));
+    return (parseFormsInternal(elements));
   }
 
-  List<FormDescriptor>  parseFormsInternal( List<dynamic> elements) {
-
+  List<FormDescriptor> parseFormsInternal(List<dynamic> elements) {
     List<FormDescriptor> forms = [];
 
     // parse results
-    for ( var element in elements){
-      if( element is ParserLevel) {
-        if(element.name == "FORM")  {
-            List<String> columns = [];
-            String label = "";
-            String sheetName = "";
-            String condition = "";
+    for (var element in elements) {
+      if (element is ParserLevel) {
+        if (element.name == "FORM") {
+          List<String> columns = [];
+          String label = "";
+          String sheetName = "";
+          String condition = "";
 
-            for ( var subStep in element.children)  {
-
-              if( subStep is ParserProperty)  {
-                if (subStep.name == "SHEET" ) {
-                  sheetName = subStep.value;
-                }
-                if (subStep.name == "LABEL" ) {
-                  label = subStep.value;
-                }
-                if (subStep.name == "CONDITION" ) {
-                  condition = subStep.value;
-                }
+          for (var subStep in element.children) {
+            if (subStep is ParserProperty) {
+              if (subStep.name == "SHEET") {
+                sheetName = subStep.value;
               }
-
-              if( subStep is ParserLevel)  {
-                if (subStep.name == "COLUMN") {
-                  String? name;
-                  for( var propertySheet in subStep.children)  {
-                    if( propertySheet is ParserProperty)  {
-                      if(propertySheet.name == "NAME") {
-                        name = propertySheet.value;
-                      }
-
-                    }
-                  }
-
-                  if(name != null) {
-                    columns.add(name);
-                  }
-                }
+              if (subStep.name == "LABEL") {
+                label = subStep.value;
+              }
+              if (subStep.name == "CONDITION") {
+                condition = subStep.value;
               }
             }
 
-            forms.add(FormDescriptor(sheetName, label, condition, columns));
+            if (subStep is ParserProperty) {
+              if (subStep.name == "COLS") {
+                columns = subStep.value.split(",");
+               }
+            }
           }
+
+          forms.add(FormDescriptor(sheetName, label, condition, columns));
         }
-
       }
+    }
 
-
-      return forms;
-
+    return forms;
   }
-
-
-
 }

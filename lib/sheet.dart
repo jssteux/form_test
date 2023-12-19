@@ -33,8 +33,9 @@ class FormSuggestionItem {
 class MetaDatas {
 
   final  LinkedHashMap<String,SheetDescriptor> sheetDescriptors;
-  final List<FormDescriptor> formDescriptors;
-  MetaDatas(this.sheetDescriptors, this.formDescriptors);
+  final  Map<String,int> sheetIds;
+  final  List<FormDescriptor> formDescriptors;
+  MetaDatas(this.sheetDescriptors, this.formDescriptors, this.sheetIds);
 }
 
 class MetaDatasCache {

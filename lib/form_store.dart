@@ -20,7 +20,7 @@ import "package:googleapis_auth/auth_io.dart";
 import 'google_auth_client.dart';
 
 const _sheetsEndpoint = 'https://sheets.googleapis.com/v4/spreadsheets/';
-const spreadsheetId = '1MBNPE_XOPGy-x_UjVOI81eKbFCQOVq-4vvuxhwnsQ1s';
+
 
 class FormStore {
   final sign_in.GoogleSignInAccount account;
@@ -167,7 +167,7 @@ class FormStore {
       Map<String, String> formValues,
       LinkedHashMap<String, ColumnDescriptor> columns,
       Map<String, CustomImageState> files) async {
-    test();
+    //test();
 
     for (int i = 0; i < files.length; i++) {
       var key = files.keys.elementAt(i);
@@ -308,7 +308,7 @@ class FormStore {
   */
 
     //print(response.body.toString());
-    print('save datas');
+    //print('save datas');
 
     // update cache
     SheetDatasCache cache = sheetCaches[sheetName];
@@ -324,6 +324,138 @@ class FormStore {
       Navigator.of(context).pop(true);
     }
   }
+
+
+
+  prepareCascadeRemove ( List<dynamic> requests, MetaDatas metaDatas, String sheetName,  String id)  async {
+
+
+    // Reload datas
+    SheetDatas sheet = await loadDatas(sheetName);
+
+    // Search current item
+    var index = -1;
+
+    for (int i = 0; i < sheet.datas.length; i++) {
+      if (sheet.datas.elementAt(i)["ID"] == id) {
+        index = i;
+      }
+    }
+
+    if( index != -1 && metaDatas.sheetIds[sheetName] != null) {
+      int indexRemove = index + 1;
+
+      var request = {
+        "deleteDimension": {
+          "range": {
+            "sheetId": metaDatas.sheetIds[sheetName],
+            "dimension": "ROWS",
+            "startIndex": indexRemove,
+            "endIndex": indexRemove + 1
+          }
+        }
+      };
+
+
+      requests.add(request);
+
+      // update cache
+      SheetDatasCache cache = sheetCaches[sheetName];
+      cache.sheetContent.datas.removeAt(index);
+
+
+      // get references
+      for(String childSheet in metaDatas.sheetDescriptors.keys) {
+        if( childSheet != sheetName) {
+          var columns = metaDatas.sheetDescriptors[childSheet]!.columns;
+          for (ColumnDescriptor desc in columns.values) {
+            if (desc.reference == sheetName && desc.cascadeDelete) {
+              SheetDatas childDatas = await loadDatas(desc.reference);
+              for (int i = 0; i < childDatas.datas.length; i++) {
+                String? childId = childDatas.datas[i]["ID"];
+                if (childId != null && childId == id) {
+                  prepareCascadeRemove(
+                      requests, metaDatas, desc.reference, childId);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+
+
+  removeData(
+      BuildContext context,
+      String sheetName,
+      String id) async {
+    //test();
+
+
+    final authHeaders = await account.authHeaders;
+    final authenticateClient = GoogleAuthClient(authHeaders);
+    // Fonctionne avec l'utilisation d'un compte de service
+    //final authenticateClient = await obtainServiceCredentials();
+
+
+    //search main
+    String? sheetFileId = getSheetFileId();
+    String uri;
+
+
+
+
+    MetaDatas metaDatas = await getMetadatas();
+
+
+
+      var requests =   [
+
+      ];
+
+      await prepareCascadeRemove( requests,metaDatas, sheetName, id);
+
+      uri =
+      '$_sheetsEndpoint$sheetFileId:batchUpdate';
+      var response = await authenticateClient.post(
+        //final response = await authenticateClient.put(
+        Uri.parse(uri),
+        body: jsonEncode(
+            {
+              "requests": requests,
+            }
+        ),
+      );
+      print(response.body.toString());
+
+      /*
+  }
+  */
+
+      //print(response.body.toString());
+      //print('remove datas');
+
+
+
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   Future<SheetDescriptor?> loadDescriptor(String sheetName) async {
     MetaDatas metadatas = await getMetadatas();
@@ -356,6 +488,39 @@ class FormStore {
     return metatDatasCaches!.metaDatas;
   }
 
+
+
+
+  Future<Map<String,int>> getSheetsId() async {
+    LinkedHashMap<String, int> sheetIds = LinkedHashMap();
+    final authHeaders = await account.authHeaders;
+
+    final authenticateClient = GoogleAuthClient(authHeaders);
+
+    //search main
+    String? sheetFileId = getSheetFileId();
+    // Get sheet ID
+    String getUri = "${_sheetsEndpoint}get";
+    getUri = getUri + "?spreadsheetId=$sheetFileId&includeGridData=false";
+    var getResponse =  await authenticateClient.get(
+      Uri.parse(getUri),
+    );
+
+
+    //print(getResponse.body.toString());
+    int? sheetId;
+    final parsed = jsonDecode(getResponse.body.toString());
+    List sheets = parsed["sheets"];
+    for(Map sheet in sheets)  {
+      Map properties = sheet["properties"];
+      sheetIds.putIfAbsent(properties["title"], () => properties["sheetId"]);
+
+    }
+
+    return sheetIds;
+  }
+
+
   Future<MetaDatas> getMetadatasInternal() async {
     final authHeaders = await account.authHeaders;
 
@@ -376,7 +541,7 @@ class FormStore {
     List<FormDescriptor> forms = parser.parseForms(rows);
     LinkedHashMap<String, SheetDescriptor> sheets =
         parser.parseDescriptors(rows);
-    return MetaDatas(sheets, forms);
+    return MetaDatas(sheets, forms, await getSheetsId());
   }
 
   Future<DateTime?> getSheetInformation() async {
