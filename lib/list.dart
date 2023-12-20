@@ -48,14 +48,15 @@ class MyCustomListState extends State<MyCustomList> {
     super.dispose();
   }
 
+
+
   Widget _comp(int index) {
     var current = index;
 
     return Dismissible(
       key: Key(index.toString()),
       background: Container(color: Colors.red),
-      onDismissed: (direction)  {
-        // Remove the item from the data source.
+      onDismissed: (direction) async {
 
         // Then show a snackbar.
         ScaffoldMessenger.of(context)
@@ -63,11 +64,13 @@ class MyCustomListState extends State<MyCustomList> {
 
         String id = sheet.lines[current].datas["ID"]!;
         sheet.lines.removeAt(current);
-        widget.store.removeData(context, sheet.form.sheetName, id);
+        await widget.store.removeData(context, sheet.form.sheetName, id);
 
         setState(() {
           initialScrollOffset = _scrollController.offset;
         });
+
+
 
 
       },
