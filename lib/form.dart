@@ -97,6 +97,7 @@ class MyCustomFormState extends State<MyCustomForm> {
                       onPressed: () async {
                         await showDialog(
                             context: context,
+
                             builder: (BuildContext context) => ReferenceDialog(
                                     widget.store, columDescriptor.reference,
                                     (suggestion) {
@@ -127,13 +128,12 @@ class MyCustomFormState extends State<MyCustomForm> {
           focusNode: focusNodes[columnName],
           // The validator receives the text that the user has entered.
           validator: (value) {
-            if (formIndex == 1) {
               if (columDescriptor.mandatory) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter some text';
                 }
               }
-            }
+
             return null;
           },
           decoration: InputDecoration(
@@ -339,86 +339,96 @@ class MyCustomFormState extends State<MyCustomForm> {
                 child:
               Scaffold(
                 resizeToAvoidBottomInset: false,
-                  body: SingleChildScrollView(
-                    controller: _scrollController,
-                    child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          children: buildWidgets(),
-                        )),
-                  ),
-                  bottomNavigationBar: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  body: Column(
                       mainAxisSize: MainAxisSize.max,
                       children: [
-                        (forms.isNotEmpty)
-                            ? PopupMenuButton(
-                                itemBuilder: (BuildContext context) {
+
+
+                      Container(
+                        height: 50,
+                      color: Colors.grey[200], child:Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.max,
+
+                        children: [
+                          (forms.isNotEmpty)
+                              ? PopupMenuButton(
+                              itemBuilder: (BuildContext context) {
                                 return buildForms();
                               }, onSelected: (result) {
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) => result));
-                              })
-                            : Spacer(),
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => result));
+                          })
+                              : const Spacer(),
 
-                        Container(
-                            margin: EdgeInsets.only(right: 15),
-                            child: ElevatedButton(
-                              onPressed: () {
-                                // Validate returns true if the form is valid, or false otherwise.
-                                if (_formKey.currentState!.validate()) {
-                                  // If the form is valid, display a snackbar. In the real world,
-                                  // you'd often call a server or save the information in a database.
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('Processing Data')),
-                                  );
+                          Container(
+                              margin: const EdgeInsets.only(right: 15),
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  // Validate returns true if the form is valid, or false otherwise.
+                                  if (_formKey.currentState!.validate()) {
+                                    // If the form is valid, display a snackbar. In the real world,
+                                    // you'd often call a server or save the information in a database.
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text('Processing Data')),
+                                    );
 
-                                  _formKey.currentState!.save();
+                                    _formKey.currentState!.save();
 
-                                  Map<String, String> formValues = {};
+                                    Map<String, String> formValues = {};
 
-                                  if (initialValues["ID"] != null) {
-                                    formValues.putIfAbsent(
-                                        "ID", () => initialValues["ID"]!);
-                                  }
+                                    if (initialValues["ID"] != null) {
+                                      formValues.putIfAbsent(
+                                          "ID", () => initialValues["ID"]!);
+                                    }
 
-                                  for (int i = 0; i < columns.length; i++) {
-                                    String columnName =
-                                        columns.keys.elementAt(i);
-                                    ColumnDescriptor columDescriptor =
-                                        columns[columnName]!;
+                                    for (int i = 0; i < columns.length; i++) {
+                                      String columnName =
+                                      columns.keys.elementAt(i);
+                                      ColumnDescriptor columDescriptor =
+                                      columns[columnName]!;
 
-                                    if (columDescriptor.reference.isNotEmpty) {
-                                      formValues.putIfAbsent(columnName,
-                                          () => referencesValues[columnName]!);
-                                    } else if (columDescriptor.type ==
-                                            "STRING" ||
-                                        columDescriptor.type == "DATE") {
-                                      formValues.putIfAbsent(columnName,
-                                          () => controllers[columnName]!.text);
-                                    } else if (columDescriptor.type ==
-                                        "GOOGLE_IMAGE") {
-                                      if (initialValues[columnName] != null) {
+                                      if (columDescriptor.reference.isNotEmpty) {
                                         formValues.putIfAbsent(columnName,
-                                            () => initialValues[columnName]!);
+                                                () => referencesValues[columnName]!);
+                                      } else if (columDescriptor.type ==
+                                          "STRING" ||
+                                          columDescriptor.type == "DATE") {
+                                        formValues.putIfAbsent(columnName,
+                                                () => controllers[columnName]!.text);
+                                      } else if (columDescriptor.type ==
+                                          "GOOGLE_IMAGE") {
+                                        if (initialValues[columnName] != null) {
+                                          formValues.putIfAbsent(columnName,
+                                                  () => initialValues[columnName]!);
+                                        }
                                       }
                                     }
-                                  }
 
-                                  widget.store.saveData(
-                                      context,
-                                      widget.sheetName,
-                                      formValues,
-                                      columns,
-                                      files);
-                                }
-                              },
-                              child: const Padding(
-                                  padding: EdgeInsets.only(left: 20, right: 20),
-                                  child: Text('Save')),
-                            )),
-                      ]),
+                                    widget.store.saveData(
+                                        context,
+                                        widget.sheetName,
+                                        formValues,
+                                        columns,
+                                        files);
+                                  }
+                                },
+                                child: const Padding(
+                                    padding: EdgeInsets.only(left: 20, right: 20),
+                                    child: Text('Save')),
+                              )),
+                        ])),
+                    Expanded(child:SingleChildScrollView(
+                      controller: _scrollController,
+                      child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            children: buildWidgets(),
+                          )),
+                    )),
+
+                  ]),
                 )));
           } else {
             return const CircularProgressIndicator();

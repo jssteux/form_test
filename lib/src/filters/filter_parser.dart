@@ -70,7 +70,7 @@ Expression _createFunction(String name)
     String functionName = name.replaceAll(" ", "");
     functionName = functionName.substring(0,functionName.length -2);
 
-    print("create function $functionName");
+    //print("create function $functionName");
     return SimpleFunction(functionName, functions[functionName]!);
 }
 Expression _createUnaryFunction(String name, Expression expression) {

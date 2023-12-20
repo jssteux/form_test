@@ -9,6 +9,7 @@ import 'package:form_test/form_descriptor.dart';
 import 'package:form_test/logger.dart';
 import 'package:form_test/main.dart';
 import 'package:form_test/src/files/file_item.dart';
+import 'package:form_test/src/filters/ast.dart';
 import 'package:form_test/src/filters/filter_parser.dart';
 import 'package:form_test/src/parser/parser.dart';
 import 'package:form_test/row.dart';
@@ -420,7 +421,7 @@ class FormStore {
 
       uri =
       '$_sheetsEndpoint$sheetFileId:batchUpdate';
-      var response = await authenticateClient.post(
+      await authenticateClient.post(
         //final response = await authenticateClient.put(
         Uri.parse(uri),
         body: jsonEncode(
@@ -429,7 +430,7 @@ class FormStore {
             }
         ),
       );
-      print(response.body.toString());
+      //print(response.body.toString());
 
       /*
   }
@@ -468,22 +469,22 @@ class FormStore {
   }
 
   Future<MetaDatas> getMetadatas() async {
-    print('loadt metadats');
+    //print('loadt metadats');
 
     MetaDatasCache? cache = metatDatasCaches;
 
     DateTime? last = await getSheetInformation();
     if (cache != null && last != null) {
       if (last.isAtSameMomentAs(cache.modifiedTime)) {
-        print('use cache');
+        //print('use cache');
         return cache.metaDatas;
       }
     }
 
-    print('load metadats internal');
+    //print('load metadats internal');
     MetaDatas metaDatas = await getMetadatasInternal();
 
-    print('return metadats');
+    //print('return metadats');
     metatDatasCaches = MetaDatasCache(metaDatas, last!);
     return metatDatasCaches!.metaDatas;
   }
@@ -501,14 +502,13 @@ class FormStore {
     String? sheetFileId = getSheetFileId();
     // Get sheet ID
     String getUri = "${_sheetsEndpoint}get";
-    getUri = getUri + "?spreadsheetId=$sheetFileId&includeGridData=false";
+    getUri = "$getUri?spreadsheetId=$sheetFileId&includeGridData=false";
     var getResponse =  await authenticateClient.get(
       Uri.parse(getUri),
     );
 
 
     //print(getResponse.body.toString());
-    int? sheetId;
     final parsed = jsonDecode(getResponse.body.toString());
     List sheets = parsed["sheets"];
     for(Map sheet in sheets)  {
@@ -584,7 +584,7 @@ class FormStore {
       }
     }
 
-    print('load datas internal');
+    //print('load datas internal');
     SheetDatas datas = await loadDatasInternal(sheetName);
 
     sheetCaches[sheetName] = SheetDatasCache(datas, last!);
@@ -680,13 +680,13 @@ class FormStore {
 
 
       if (fullCondition.isNotEmpty) {
-        String condition = fullCondition;
+        //String condition = fullCondition;
 
         Map<String, String?> variables = await prepareVariables(datas, i);
 
-        print('before $fullCondition');
+        //print('before $fullCondition');
         var res = evalExpression(fullCondition, variables, ctx);
-        print('after $fullCondition');
+        //print('after $fullCondition');
         insert = res;
       } else {
         insert = true;
@@ -902,18 +902,18 @@ class FormStore {
 
 
   dynamic evalExpression(String initExp, Map<String, String?> variables, Context ctx) {
-    var ast;
+    Expression ast;
 
     try {
-      print("parse exp " + initExp);
+      //print("parse exp " + initExp);
       ast = filterParser.parse(initExp).value;
     } catch (err) {
-      print('parsing error' + err.toString());
-      throw err;
+      //print('parsing error' + err.toString());
+      rethrow;
     }
-    print("eval condition $initExp");
+    //print("eval condition $initExp");
 
-    var res;
+    dynamic res;
 
     //{'NOM': datas.datas[i]['NOM'], 'CLIENT': datas.datas[i]['CLIENT'], "_CTX": '1'}
 
@@ -930,8 +930,8 @@ class FormStore {
 
       res = ast.eval(variables);
     } catch (err) {
-      print('eval error' + err.toString());
-      throw err;
+      //print('eval error' + err.toString());
+      rethrow;
     }
 
     return res;
@@ -987,9 +987,7 @@ class FormStore {
       }
 
       for( var file in files.files!) {
-          if (file is drive.File) {
-            qFiles.add(file);
-          }
+          qFiles.add(file);
       }
 
     }

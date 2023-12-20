@@ -164,7 +164,7 @@ class EqualsBinary extends Expression {
     dynamic righE = right.eval(variables);
 
     if( leftE is String && righE is String) {
-      print('eval equals $leftE $righE');
+      //print('eval equals $leftE $righE');
       return (leftE.toUpperCase().compareTo(righE.toUpperCase()) == 0);
     } else  {
       return false;

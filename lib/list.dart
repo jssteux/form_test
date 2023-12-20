@@ -54,20 +54,22 @@ class MyCustomListState extends State<MyCustomList> {
     return Dismissible(
       key: Key(index.toString()),
       background: Container(color: Colors.red),
-      onDismissed: (direction) async {
+      onDismissed: (direction)  {
         // Remove the item from the data source.
+
+        // Then show a snackbar.
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('item dismissed')));
 
         String id = sheet.lines[current].datas["ID"]!;
         sheet.lines.removeAt(current);
-        await widget.store.removeData(context, sheet.form.sheetName, id);
+        widget.store.removeData(context, sheet.form.sheetName, id);
 
         setState(() {
           initialScrollOffset = _scrollController.offset;
         });
 
-        // Then show a snackbar.
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('item dismissed')));
+
       },
       child: GestureDetector(
           child: ListTile(title: Row(children: buildInnerWidgets(index))),
@@ -147,23 +149,15 @@ class MyCustomListState extends State<MyCustomList> {
     return widgets;
   }
 
+
+
   Widget buildSearchItem() {
     var textField = TextFormField(
         controller: searchController,
         focusNode: focusNode,
-        decoration: InputDecoration(
-          suffixIcon: SizedBox(
-              width: 100,
-              child: Row(children: [
-                const Spacer(),
-                IconButton(
-                  onPressed: () async {
-                    focusNode.unfocus();
-                    searchController.text = "";
-                  },
-                  icon: const Icon(Icons.clear),
-                ),
-              ])),
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+            hintText: 'search items'
         ));
 
     searchController.addListener(() {
@@ -173,7 +167,7 @@ class MyCustomListState extends State<MyCustomList> {
       }
 
       timer = Timer(const Duration(milliseconds: 300), () {
-        print("timer");
+        //print("timer");
 
         if (searchPattern != searchController.text) {
           setState(() {
@@ -183,7 +177,8 @@ class MyCustomListState extends State<MyCustomList> {
       });
     });
 
-    return textField;
+    return Expanded( flex: 0, child: Container(color: Colors.grey[200], child: Padding(padding: const EdgeInsets.only(left:10),
+    child:textField)));
   }
 
   @override
@@ -214,7 +209,10 @@ class MyCustomListState extends State<MyCustomList> {
                   },
                 child: Scaffold(
                   resizeToAvoidBottomInset: false,
-                  body: Stack(
+                  body:
+
+
+                  Stack(
                       children: <Widget>[
                         Column(
                             mainAxisAlignment: MainAxisAlignment.end,
@@ -263,7 +261,7 @@ class MyCustomListState extends State<MyCustomList> {
                             children: [
 
 
-                              Padding(padding:EdgeInsets.all(5),child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                              Padding(padding:const EdgeInsets.all(5),child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                                 ElevatedButton(
                                   onPressed: () {
                                     Navigator.push(

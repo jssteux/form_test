@@ -141,7 +141,7 @@ class _FirstRouteState extends State<FirstRoute> {
         forms = await store!.getForms();
       }
     } catch(e)  {
-      print(e.toString());
+      //print(e.toString());
       prefs.clear();
 
     }
@@ -291,7 +291,7 @@ class _FirstRouteState extends State<FirstRoute> {
         height: 70,
         child: Card(
             elevation: 1,
-            color: Colors.white70,
+            color: Colors.grey[200],
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               if (store!.spreadSheet == null) ...<Widget>[
@@ -388,17 +388,15 @@ class _FirstRouteState extends State<FirstRoute> {
         FormDescriptor form = forms![formIndex];
 
         int indice = formIndex % 2;
-        Alignment align;
         if (indice == 0) {
-          align = Alignment.centerRight;
         } else {
-          align = Alignment.centerLeft;
         }
 
-        Widget inner = Expanded(
+        Widget inner =
+            Expanded( flex:2, child : Container (  padding: const EdgeInsets.all(10), child:Container( constraints: const BoxConstraints(minHeight: 80, maxHeight: double.infinity),
             child: Card(
                 elevation: 2,
-                child: TextButton(
+                  child: TextButton(
                   child: Text(form.label, style: const TextStyle(fontSize: 16)),
                   onPressed: () {
                     Navigator.push(
@@ -412,12 +410,12 @@ class _FirstRouteState extends State<FirstRoute> {
                               form.label)),
                     );
                   },
-                )));
+                )))));
 
         // reinit
         if (indice == 0) {
           if (inners.isNotEmpty) {
-            widgets.add(Row(
+            widgets.add( Row(
               children: inners,
             ));
           }
@@ -432,7 +430,9 @@ class _FirstRouteState extends State<FirstRoute> {
       if (inners.length == 1) {
         inners.add(const Spacer());
       }
-      widgets.add(Row(
+      widgets.add( Row(
+        mainAxisSize: MainAxisSize.max,
+
         children: inners,
       ));
     }

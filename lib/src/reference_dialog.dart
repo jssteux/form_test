@@ -21,6 +21,7 @@ class ReferenceDialog extends StatefulWidget {
 class ReferenceDialogState extends State<ReferenceDialog> {
 
   final _formKey = GlobalKey<FormState>();
+  bool closed = false;
 
 
   List<Widget> buildWidget() {
@@ -28,6 +29,7 @@ class ReferenceDialogState extends State<ReferenceDialog> {
 
     var myController = TextEditingController(text: "");
     widgets.add(TypeAheadFormField(
+
         suggestionsBoxDecoration: const SuggestionsBoxDecoration(
           hasScrollbar: true,
           color: Colors.white,
@@ -54,10 +56,19 @@ class ReferenceDialogState extends State<ReferenceDialog> {
           );
         },
         onSuggestionSelected: (suggestion) {
+          closed = true;
           widget.onSelect(suggestion);
           Navigator.of(context).pop();
+
         },
         onSuggestionsBoxToggle: (isOpen) async {
+
+          // To handle close if keyboard is hidden
+          if (isOpen == false) {
+            if( closed == false) {
+              Navigator.of(context).pop();
+            }
+          }
 
           if (isOpen == true) {
             myController.text = "";
@@ -74,9 +85,9 @@ class ReferenceDialogState extends State<ReferenceDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(child: Form(key: _formKey, child: Column(
+    return TapRegion( onTapOutside: (tap) { closed = true;}, child:Dialog(child: Form(key: _formKey, child: Column(
         children: buildWidget(),
       ),
-    ),);
+    ),));
   }
 }
