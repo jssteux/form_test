@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:form_test/form_descriptor.dart';
 import 'package:form_test/list.dart';
@@ -16,11 +18,23 @@ import 'src/sign_in_button.dart';
 /// The type of the onClick callback for the (mobile) Sign In Button.
 typedef HandleSignInFn = Future<void> Function();
 
+Logger logger = Logger();
+
 void main() {
-  runApp(const MaterialApp(
-    title: 'Navigation Basics',
-    home: FirstRoute(),
-  ));
+
+
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    runApp(const MaterialApp(
+      title: 'Navigation Basics',
+      home: FirstRoute(),
+    ));
+  }, (Object error, StackTrace stack) async {
+
+    debugPrintStack(label: "DART ERROR $error", stackTrace: stack);
+  });
+
+
 }
 
 test() {
@@ -60,7 +74,6 @@ class _FirstRouteState extends State<FirstRoute> {
   GoogleSignInAccount? _account;
   FormStore? store;
   bool _isAuthorized = false; // has granted permissions?
-  Logger logger = Logger();
   List<FormDescriptor>? forms;
   bool loading = false;
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
@@ -68,6 +81,14 @@ class _FirstRouteState extends State<FirstRoute> {
   @override
   void initState() {
     super.initState();
+    WidgetsFlutterBinding.ensureInitialized();
+    FlutterError.onError = (FlutterErrorDetails details) {
+
+      debugPrintStack(label: "FLUTTER ERROR ${details.exception}", stackTrace: details.stack);
+
+      // Send report
+      // NEVER REACHES HERE - WHY?
+    };
 
     if (kIsWeb) {
       _googleSignIn = GoogleSignIn(
