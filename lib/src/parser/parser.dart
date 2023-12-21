@@ -226,10 +226,22 @@ class Parser {
               }
             }
 
-            if (subStep is ParserProperty) {
-              if (subStep.name == "COLS") {
-                columns = subStep.value.split(",");
-               }
+            if( subStep is ParserLevel)  {
+              if (subStep.name == "COLUMN") {
+                String? name;
+                for( var propertySheet in subStep.children)  {
+                  if( propertySheet is ParserProperty)  {
+                    if(propertySheet.name == "NAME") {
+                      name = propertySheet.value;
+                    }
+
+                  }
+                }
+
+                if(name != null) {
+                  columns.add(name);
+                }
+              }
             }
           }
 
