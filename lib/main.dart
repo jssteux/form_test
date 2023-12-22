@@ -31,7 +31,7 @@ void main() {
     ));
   }, (Object error, StackTrace stack) async {
 
-    debugPrintStack(label: "DART ERROR $error", stackTrace: stack);
+    debugPrintStack(label: "==> DART ERROR $error", stackTrace: stack);
   });
 
 
@@ -84,7 +84,7 @@ class _FirstRouteState extends State<FirstRoute> {
     WidgetsFlutterBinding.ensureInitialized();
     FlutterError.onError = (FlutterErrorDetails details) {
 
-      debugPrintStack(label: "FLUTTER ERROR ${details.exception}", stackTrace: details.stack);
+      debugPrintStack(label: "==> FLUTTER ERROR ${details.exception}", stackTrace: details.stack);
 
       // Send report
       // NEVER REACHES HERE - WHY?
