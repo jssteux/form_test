@@ -264,7 +264,7 @@ class MyCustomListState extends State<MyCustomList> {
                             children: [
 
 
-                              Padding(padding:const EdgeInsets.all(5),child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                              Padding(padding:const EdgeInsets.all(20),child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                                 ElevatedButton(
                                   onPressed: () {
                                     Navigator.push(
@@ -291,10 +291,10 @@ class MyCustomListState extends State<MyCustomList> {
                                   },
                                   style: ElevatedButton.styleFrom(
                                     shape: const CircleBorder(),
-                                    padding: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(18),
                                     backgroundColor: Colors.blue, // <-- Button color
                                   ),
-                                  child: const Icon(Icons.add, color: Colors.white),
+                                  child: const Icon(size: 30, Icons.add, color: Colors.white),
                                 )
                               ]))
                             ])
