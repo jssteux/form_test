@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
-import 'package:form_test/form_store.dart';
-import 'package:form_test/sheet.dart';
+import 'package:form_test/src/store/front/front_store.dart';
+import 'package:form_test/src/store/front/sheet.dart';
 
 class ReferenceDialog extends StatefulWidget {
-  final FormStore store;
+  final FrontStore store;
   final String columnReference;
   final Function( FormSuggestionItem) onSelect;
 

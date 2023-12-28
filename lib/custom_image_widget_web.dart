@@ -4,11 +4,11 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:form_test/custom_image_state.dart';
-import 'package:form_test/form_store.dart';
+import 'package:form_test/src/store/front/front_store.dart';
 
 class CustomImageFormFieldWeb extends FormField<CustomImageState?> {
 
-  final FormStore store;
+  final FrontStore store;
   final String label;
 
 

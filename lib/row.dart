@@ -2,7 +2,7 @@ import 'dart:collection';
 
 import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/custom_image_state.dart';
-import 'package:form_test/form_descriptor.dart';
+import 'package:form_test/src/store/front/form_descriptor.dart';
 
 class DatasRow {
   final  Map<String,String> datas;

@@ -1,7 +1,7 @@
 import 'dart:collection';
 
 import 'package:form_test/column_descriptor.dart';
-import 'package:form_test/form_descriptor.dart';
+import 'package:form_test/src/store/front/form_descriptor.dart';
 
 
 class FilteredLine  {
@@ -33,9 +33,9 @@ class FormSuggestionItem {
 class MetaDatas {
 
   final  LinkedHashMap<String,SheetDescriptor> sheetDescriptors;
-  final  Map<String,int> sheetIds;
+ // final  Map<String,int> sheetIds;
   final  List<FormDescriptor> formDescriptors;
-  MetaDatas(this.sheetDescriptors, this.formDescriptors, this.sheetIds);
+  MetaDatas(this.sheetDescriptors, this.formDescriptors);
 }
 
 class MetaDatasCache {

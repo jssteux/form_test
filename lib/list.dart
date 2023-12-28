@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:form_test/form_store.dart';
+import 'package:form_test/src/store/front/front_store.dart';
 import 'package:form_test/main.dart';
-import 'package:form_test/sheet.dart';
+import 'package:form_test/src/store/front/sheet.dart';
 import 'package:vs_scrollbar/vs_scrollbar.dart';
 
 import 'column_descriptor.dart';
@@ -13,7 +13,7 @@ class MyCustomList extends StatefulWidget {
   const MyCustomList(this.store, this.sheetName, this.formIndex, this.context,
       {super.key});
 
-  final FormStore store;
+  final FrontStore store;
   final Context context;
   final String? sheetName;
   final int formIndex;

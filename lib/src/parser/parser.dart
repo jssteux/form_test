@@ -1,8 +1,8 @@
 import 'dart:collection';
 
 import 'package:form_test/column_descriptor.dart';
-import 'package:form_test/form_descriptor.dart';
-import 'package:form_test/sheet.dart';
+import 'package:form_test/src/store/front/form_descriptor.dart';
+import 'package:form_test/src/store/front/sheet.dart';
 import 'package:form_test/src/parser/parser_context.dart';
 import 'package:form_test/src/parser/parser_level.dart';
 import 'package:form_test/src/parser/parser_property.dart';

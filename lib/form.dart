@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/custom_image_state.dart';
-import 'package:form_test/form_descriptor.dart';
-import 'package:form_test/form_store.dart';
+import 'package:form_test/src/store/front/form_descriptor.dart';
+import 'package:form_test/src/store/front/front_store.dart';
 import 'package:form_test/main.dart';
 import 'package:form_test/row.dart';
 import 'package:form_test/src/reference_dialog.dart';
@@ -17,7 +17,7 @@ import 'custom_image_widget_web.dart';
 class MyCustomForm extends StatefulWidget {
   const MyCustomForm(this.store, this.sheetName, this.rowIndex, this.context,
       {super.key});
-  final FormStore store;
+  final FrontStore store;
   final String sheetName;
   final int rowIndex;
   final Context context;

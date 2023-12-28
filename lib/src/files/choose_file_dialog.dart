@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
-import 'package:form_test/form_store.dart';
+import 'package:form_test/src/store/front/front_store.dart';
 import 'package:form_test/src/files/file_item.dart';
 
 
 class ChooseFileDialog extends StatefulWidget {
-  final FormStore store;
+  final FrontStore store;
   final Function(FileItem) onSelect;
 
   const ChooseFileDialog(this.store, this.onSelect, {super.key});
