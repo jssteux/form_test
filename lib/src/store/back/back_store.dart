@@ -29,8 +29,6 @@ class BackStore {
     if (file == null) {
       return null;
     }
-    debugPrint("BackStore save file");
-
     final authHeaders = await account.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
@@ -55,8 +53,6 @@ class BackStore {
     if (bytes == null) {
       return null;
     }
-    debugPrint("BackStore save image");
-
     final authHeaders = await account.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
@@ -91,9 +87,6 @@ class BackStore {
   }
 
   Future<Uint8List?> read(String url) async {
-
-
-    debugPrint("BackStore read $url");
     final authHeaders = await account.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
@@ -167,7 +160,7 @@ class BackStore {
       LinkedHashMap<String, ColumnDescriptor> columns,
       Map<String, CustomImageState> files) async {
     //test();
-    debugPrint("BackStore save datas");
+
     for (int i = 0; i < files.length; i++) {
       var key = files.keys.elementAt(i);
       var file = files[key];
@@ -322,7 +315,6 @@ class BackStore {
   async {
     //test();
 
-    debugPrint("BackStore remove datas");
 
     final authHeaders = await account.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -398,7 +390,7 @@ class BackStore {
 
   Future<Map<String,int>> getSheetsId() async {
 
-    debugPrint("BackStore getSheetsId");
+    debugPrint("getSheetsId");
 
     LinkedHashMap<String, int> sheetIds = LinkedHashMap();
     final authHeaders = await account.authHeaders;
@@ -430,7 +422,7 @@ class BackStore {
 
   Future<List<dynamic>> getMetadatasDatasRows() async {
 
-    debugPrint("BackStore getMetadatasDatasRows");
+    debugPrint("getMetadatasDatasRows");
 
     final authHeaders = await account.authHeaders;
 
@@ -452,7 +444,8 @@ class BackStore {
 
   Future<DateTime> getSheetInformation() async {
 
-    debugPrint("BackStore getSheetInformation");
+    debugPrint("getSheetInformation");
+
 
     lastCheck = DateTime.now();
 
@@ -474,9 +467,6 @@ class BackStore {
 
 
   Future<List<Map<String, String>>> loadDatas(String sheetName) async {
-
-    debugPrint("BackStore loadDatas $sheetName");
-
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -520,9 +510,6 @@ class BackStore {
 
 
   Future<Uint8List?> loadImage(String? url) async {
-
-    debugPrint("BackStore loadImage");
-
     if (url != null && url.isNotEmpty) {
       Uint8List? content = await read(url);
       return  content;
