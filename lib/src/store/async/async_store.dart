@@ -1,6 +1,11 @@
+import 'dart:collection';
+
 import 'package:flutter/cupertino.dart';
 import 'package:form_test/logger.dart';
+import 'package:form_test/src/parser/parser.dart';
 import 'package:form_test/src/store/back/back_store.dart';
+import 'package:form_test/src/store/front/form_descriptor.dart';
+import 'package:form_test/src/store/front/sheet.dart';
 
 class SheetAsyncCache {
 
@@ -15,10 +20,11 @@ class SheetAsyncCache {
 class AsyncStore {
   final Logger logger;
   final BackStore backStore;
+  final Parser parser;
   final Map<String,SheetAsyncCache> sheetCaches = {};
+  MetaDatasCache? metatDatasCaches;
 
-
-  AsyncStore(this.backStore, this.logger) { start();}
+  AsyncStore(this.backStore, this.logger , { this.parser = const Parser()}) { start();}
 
 
   Future<SheetAsyncCache> getDatas (String sheetName) async {
@@ -30,9 +36,35 @@ class AsyncStore {
   }
 
   loadDatas (DateTime last, String sheetName) async {
-    List<Map<String, String>> datas = await backStore.loadDatas(sheetName);
+    MetaDatas metaDatas = await getMetadatas();
+    List<Map<String, String>> datas = await backStore.loadDatas(metaDatas, sheetName);
     sheetCaches[sheetName] = SheetAsyncCache( last, datas);
   }
+
+
+  Future<MetaDatas> getMetadatas() async {
+    if (metatDatasCaches == null) {
+      DateTime last = await backStore.getSheetInformation();
+      await loadMetadatas(last);
+    }
+    return metatDatasCaches!.metaDatas;
+  }
+
+  loadMetadatas (DateTime last) async {
+    //print('load metadats internal');
+    List<dynamic> rows = await backStore.getMetadatasDatasRows();
+
+
+    List<FormDescriptor> forms = parser.parseForms(rows);
+    LinkedHashMap<String, SheetDescriptor> sheets =
+    parser.parseDescriptors(rows);
+    MetaDatas metaDatas =  MetaDatas(sheets, forms);
+
+    //print('return metadats');
+    metatDatasCaches = MetaDatasCache(metaDatas, last);
+  }
+
+
 
 
   start() {
@@ -48,6 +80,16 @@ class AsyncStore {
 
         DateTime last = await backStore.getSheetInformation();
 
+        bool reloadMetadatas = true;
+        if( metatDatasCaches != null) {
+          if (last.isAtSameMomentAs(metatDatasCaches!.modifiedTime)) {
+            reloadMetadatas = false;
+          }
+        }
+        if (reloadMetadatas) {
+          loadMetadatas(last);
+        }
+
         for (String sheetName in sheetCaches.keys) {
           bool reloadSheet = true;
           var cache = sheetCaches[ sheetName];
@@ -59,6 +101,8 @@ class AsyncStore {
             loadDatas(last, sheetName);
           }
         }
+
+
 
 
       } catch(e)  {

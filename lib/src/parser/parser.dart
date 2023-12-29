@@ -102,6 +102,10 @@ class Parser {
           LinkedHashMap<String, ColumnDescriptor> columnsDescriptor =
               LinkedHashMap();
           List<String> referenceLabels = [];
+          String firstCol = 'A';
+          int firstRow = 1;
+          String lastCol = 'Z';
+          int lastRow = 1000;
 
           for (var subStep in element.children) {
             if (subStep is ParserProperty) {
@@ -169,6 +173,24 @@ class Parser {
                 //print('add column$name $type');
               }
             }
+
+            if (subStep is ParserProperty) {
+              if (subStep.name == "RANGE") {
+
+                final rangeRegexp = RegExp(r'^([a-zA-Z]*)([0-9]*):([a-zA-Z]*)(([0-9])*)');
+
+
+                var match = rangeRegexp.firstMatch(subStep.value);
+                if( match != null && match.groupCount == 5)  {
+                  // A2:D1000
+                  firstCol = match.group(1)!;
+                  firstRow = int.parse(match.group(2)!);
+                  lastCol = match.group(3)!;
+                  lastRow = int.parse(match.group(4)!);
+                }
+              }
+            }
+
           }
 
           if (sheetName != null) {
@@ -178,7 +200,7 @@ class Parser {
             descriptors.putIfAbsent(
                 sheetName,
                 () => SheetDescriptor(
-                    columnsDescriptor, sheetForms, referenceLabels));
+                    columnsDescriptor, sheetForms, firstCol,firstRow, lastCol, lastRow, referenceLabels));
           }
         }
       }

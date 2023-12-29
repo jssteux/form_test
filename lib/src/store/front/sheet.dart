@@ -49,7 +49,13 @@ class SheetDescriptor {
   final  LinkedHashMap<String,ColumnDescriptor> columns;
   final  List<String> refDisplayName;
   final List<FormDescriptor> formDescriptors;
-  SheetDescriptor(this.columns, this.formDescriptors, this.refDisplayName);
+  final String firstCol;
+  final int firstRow;
+  final String lastCol;
+  final int lastRow;
+
+
+  SheetDescriptor(this.columns, this.formDescriptors, this.firstCol, this.firstRow, this.lastCol, this.lastRow, this.refDisplayName);
 }
 
 class SheetDatas {

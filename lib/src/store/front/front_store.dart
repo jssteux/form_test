@@ -65,7 +65,7 @@ class FrontStore {
       LinkedHashMap<String, ColumnDescriptor> columns,
       Map<String, CustomImageState> files) async {
 
-      int index = await backStore.saveData(context, sheetName, formValues, columns, files);
+      int index = await backStore.saveData(context, await getMetadatas(), sheetName, formValues, columns, files);
 
 
       // update cache
@@ -168,30 +168,8 @@ class FrontStore {
   }
 
   Future<MetaDatas> getMetadatas() async {
-    //print('loadt metadats');
 
-    MetaDatasCache? cache = metatDatasCaches;
-
-    DateTime? last = await backStore.getSheetInformation();
-    if (cache != null) {
-      if (last.isAtSameMomentAs(cache.modifiedTime)) {
-        //print('use cache');
-        return cache.metaDatas;
-      }
-    }
-
-    //print('load metadats internal');
-    List<dynamic> rows = await backStore.getMetadatasDatasRows();
-
-
-    List<FormDescriptor> forms = parser.parseForms(rows);
-    LinkedHashMap<String, SheetDescriptor> sheets =
-    parser.parseDescriptors(rows);
-    MetaDatas metaDatas =  MetaDatas(sheets, forms);
-
-    //print('return metadats');
-    metatDatasCaches = MetaDatasCache(metaDatas, last);
-    return metatDatasCaches!.metaDatas;
+    return await asyncStore!.getMetadatas();
   }
 
 

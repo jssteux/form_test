@@ -7,6 +7,7 @@ import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/custom_image_state.dart';
 import 'package:form_test/logger.dart';
 import 'package:form_test/src/store/back/back_store_api.dart';
+import 'package:form_test/src/store/front/sheet.dart';
 import 'package:google_sign_in/google_sign_in.dart' as sign_in;
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
@@ -155,11 +156,16 @@ class BackStore {
 
   Future<int> saveData(
       BuildContext context,
+      MetaDatas metaDatas,
       String sheetName,
       Map<String, String> formValues,
       LinkedHashMap<String, ColumnDescriptor> columns,
       Map<String, CustomImageState> files) async {
     //test();
+
+    if( metaDatas.sheetDescriptors[sheetName] == null) {
+      throw(Exception("sheet not defined"));
+    }
 
     for (int i = 0; i < files.length; i++) {
       var key = files.keys.elementAt(i);
@@ -199,10 +205,12 @@ class BackStore {
     //search main
     String? sheetFileId = getSheetFileId();
 
-    String encodedRange = Uri.encodeComponent("$sheetName!A1:D1");
+
+
+
+    String encodedRange;
 
     String uri;
-    String range = "";
     /*
     if( account.email == 'jssteux@gmail.com') {
      uri = '$_sheetsEndpoint$spreadsheetId/values/$encodedRange:append?valueInputOption=RAW';
@@ -211,7 +219,7 @@ class BackStore {
       */
 
     // Reload datas
-    List<Map<String, String>> datas = await loadDatas(sheetName);
+    List<Map<String, String>> datas = await loadDatas(metaDatas, sheetName);
 
     // Search current item
     var index = -1;
@@ -255,10 +263,13 @@ class BackStore {
       values.add(value);
     }
 
-    String lastColumn = String.fromCharCode(65 + nbColumns - 1);
+    int firstRow = metaDatas.sheetDescriptors[sheetName]!.firstRow;
+    String firstCol =  metaDatas.sheetDescriptors[sheetName]!.firstCol;
+
+    String lastColumn = String.fromCharCode(metaDatas.sheetDescriptors[sheetName]!.firstCol.codeUnitAt(0) + nbColumns - 1);
 
     if (index == -1) {
-      range = '$sheetName!A1:$lastColumn' '1';
+      String range = '$sheetName!$firstCol$firstRow:$lastColumn$firstRow';
       encodedRange = Uri.encodeComponent(range);
       uri =
           '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW';
@@ -275,8 +286,8 @@ class BackStore {
         ),
       );
     } else {
-      int indexInsertion = index + 2;
-      range = "$sheetName!A$indexInsertion:$lastColumn$indexInsertion";
+      int indexInsertion = index + firstRow;
+      String range = "$sheetName!$firstCol$indexInsertion:$lastColumn$indexInsertion";
 
       encodedRange = Uri.encodeComponent(range);
 
@@ -447,8 +458,6 @@ class BackStore {
     debugPrint("getSheetInformation");
 
 
-    lastCheck = DateTime.now();
-
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -466,15 +475,21 @@ class BackStore {
 
 
 
-  Future<List<Map<String, String>>> loadDatas(String sheetName) async {
+  Future<List<Map<String, String>>> loadDatas(MetaDatas metaDatas, String sheetName) async {
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
 
+    if( metaDatas.sheetDescriptors[sheetName] == null) {
+      throw(Exception("sheet not defined"));
+    }
 
     String? sheetFileId = getSheetFileId();
 
-    final encodedRange = Uri.encodeComponent("$sheetName!A1:E1000");
+    String range = "${metaDatas.sheetDescriptors[sheetName]!.firstCol}${metaDatas.sheetDescriptors[sheetName]!.firstRow}:${metaDatas.sheetDescriptors[sheetName]!.lastCol}${metaDatas.sheetDescriptors[sheetName]!.lastRow}";
+
+
+    final encodedRange = Uri.encodeComponent("$sheetName!$range");
 
     String uri = '$_sheetsEndpoint$sheetFileId/values/$encodedRange';
 
@@ -482,18 +497,21 @@ class BackStore {
 
     final data = jsonDecode(response.body.toString());
     final List<dynamic> rows = data['values'];
-    final List<dynamic> cellsName = rows[0];
+
+
+    var cols = metaDatas.sheetDescriptors[sheetName]!.columns;
+
 
     List<Map<String, String>> res = [];
-    for (int i = 1; i < rows.length; i++) {
+    for (int i = 0; i < rows.length; i++) {
       Map<String, String> rowMap = {};
       List<dynamic> rowCells = rows.elementAt(i);
-      for (int j = 0; j < cellsName.length; j++) {
+      for (int j = 0; j < cols.length; j++) {
         var value = "";
         if (j < rowCells.length) {
           value = rowCells.elementAt(j);
         }
-        rowMap.putIfAbsent(cellsName.elementAt(j), () => value);
+        rowMap.putIfAbsent(cols.keys.elementAt(j), () => value);
       }
 
       res.add(rowMap);
