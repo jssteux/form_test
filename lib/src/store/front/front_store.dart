@@ -169,7 +169,7 @@ class FrontStore {
 
   Future<MetaDatas> getMetadatas() async {
 
-    return await asyncStore!.getMetadatas();
+    return await asyncStore.getMetadatas();
   }
 
 
