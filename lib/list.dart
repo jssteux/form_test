@@ -195,6 +195,11 @@ class MyCustomListState extends State<MyCustomList> {
         future: widget.store.loadForm(
             widget.sheetName, widget.formIndex, searchPattern, widget.context),
         builder: (context, AsyncSnapshot<FormDatas> snapshot) {
+          if( snapshot.hasError)  {
+            String errorMsg = snapshot.error.toString();
+            debugPrint("List error $errorMsg");
+          }
+
           if (snapshot.hasData) {
             _items = snapshot.data!.lines;
             sheet = snapshot.data!;

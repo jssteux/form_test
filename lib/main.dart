@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:form_test/src/store/async/async_store.dart';
 import 'package:form_test/src/store/back/back_store.dart';
 import 'package:form_test/src/store/front/form_descriptor.dart';
@@ -16,7 +17,7 @@ import 'form.dart';
 import 'package:flutter/foundation.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'src/sign_in_button.dart';
-
+import 'package:connectivity_plus/connectivity_plus.dart';
 /// The type of the onClick callback for the (mobile) Sign In Button.
 typedef HandleSignInFn = Future<void> Function();
 
@@ -75,15 +76,21 @@ class FirstRoute extends StatefulWidget {
 class _FirstRouteState extends State<FirstRoute> {
   GoogleSignInAccount? _account;
   FrontStore? store;
-  bool _isAuthorized = false; // has granted permissions?
   List<FormDescriptor>? forms;
+  bool _isAuthorized = false; // has granted permissions?
   bool loading = false;
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+  ConnectivityResult _connectionStatus = ConnectivityResult.none;
+  final Connectivity _connectivity = Connectivity();
+  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
+  String offLineSheetName = "";
+  bool continueThread = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsFlutterBinding.ensureInitialized();
+    Future.delayed(const Duration(seconds: 30), refreshTread);
     FlutterError.onError = (FlutterErrorDetails details) {
 
       debugPrintStack(label: "==> FLUTTER ERROR ${details.exception}", stackTrace: details.stack);
@@ -142,7 +149,93 @@ class _FirstRouteState extends State<FirstRoute> {
     // and the Google Sign In button together to "reduce friction and improve
     // sign-in rates" ([docs](https://developers.google.com/identity/gsi/web/guides/display-button#html)).
     _googleSignIn.signInSilently();
+
+
+    initConnectivity();
+
+    _connectivitySubscription =
+        _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+
   }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    continueThread = false;
+    super.dispose();
+  }
+
+  // Force to update page (specifically forms)
+  refreshTread() async {
+    while(continueThread == true) {
+      setState(() { });
+      await Future.delayed(const Duration(seconds: 30));
+    }
+  }
+
+
+
+
+  // Platform messages are asynchronous, so we initialize in an async method.
+  Future<void> initConnectivity() async {
+    late ConnectivityResult result;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      result = await _connectivity.checkConnectivity();
+    } on PlatformException catch (e) {
+      debugPrint('Couldn\'t check connectivity status $e');
+      return;
+    }
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) {
+      return Future.value(null);
+    }
+
+    return _updateConnectionStatus(result);
+  }
+
+
+  Future<void> _updateConnectionStatus(ConnectivityResult result) async {
+
+    setState(() {
+      _connectionStatus = result;
+    });
+
+    if( _connectionStatus != ConnectivityResult.none) {
+      // if( store != null) -> not on logout or startup
+      // If offline on startup, reload the user when line become on
+      if( store != null) {
+        await _handleSignIn();
+        await loadSheet();
+      }
+
+   }  else {
+
+      // Prepare offline mode
+
+      final SharedPreferences prefs = await _prefs;
+      String? spreadSheetId = prefs.getString("spreadSheetId");
+      if( spreadSheetId != null)  {
+        _isAuthorized = true;
+        await loadSheet();
+        if( prefs.getString("spreadSheetName") != null) {
+          offLineSheetName =  prefs.getString("spreadSheetName")!;
+        } else  {
+          offLineSheetName =  "";
+        }
+      }
+    }
+
+
+  }
+
+
+
+
+
 
   Future<void> loadSheet() async {
 
@@ -152,10 +245,22 @@ class _FirstRouteState extends State<FirstRoute> {
     // Init store
     try {
 
-      BackStore backstore = BackStore(_account!, logger);
-      AsyncStore asyncStore = AsyncStore( backstore, logger);
-      store = FrontStore(backstore,asyncStore, logger);
 
+      if( store != null)  {
+        if (_connectionStatus != ConnectivityResult.none) {
+          store!.updateBackstore(BackStore(_account!, logger));
+        } else  {
+          store!.updateBackstore( null);
+        }
+      } else {
+        BackStore? backstore;
+
+        if (_connectionStatus != ConnectivityResult.none) {
+          backstore = BackStore(_account!, logger);
+        }
+        AsyncStore asyncStore = AsyncStore(backstore, logger);
+        store = FrontStore(backstore, asyncStore, logger);
+      }
 
       if (spreadSheetId != null) {
         loading = true;
@@ -165,17 +270,16 @@ class _FirstRouteState extends State<FirstRoute> {
         if (fileList.length == 1) {
           store!.spreadSheet = fileList[0];
         }
-        forms = await store!.getForms();
+
       }
     } catch(e)  {
-      //print(e.toString());
-      prefs.clear();
-
+     // Dangereux car meme pour une erreur de connexion on perd la page
+     // prefs.clear();
     }
 
 
     loading = false;
-   setState(() {});
+    setState(() {});
   }
 
   // This is the on-click handler for the Sign In button that is rendered by Flutter.
@@ -190,6 +294,9 @@ class _FirstRouteState extends State<FirstRoute> {
       //print(error);
     }
   }
+
+
+
 
   // Prompts the user to authorize `scopes`.
   //
@@ -221,17 +328,22 @@ class _FirstRouteState extends State<FirstRoute> {
     final SharedPreferences prefs = await _prefs;
     prefs.clear();
 
+    if( store != null) {
+      store!.stop();
+    }
+
     setState(() {
       _account = null;
       _isAuthorized = false;
-      forms = null;
       store = null;
     });
   }
 
   Widget _buildBody() {
     final GoogleSignInAccount? user = _account;
-    if (user != null) {
+
+
+    if (user != null || ( _connectionStatus == ConnectivityResult.none)) {
       // The user is Authenticated
       return Column(
 
@@ -241,14 +353,17 @@ class _FirstRouteState extends State<FirstRoute> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         mainAxisSize: MainAxisSize.max,
         children: <Widget>[
-
+          (user != null && _connectionStatus != ConnectivityResult.none) ?
               Expanded(child: ListTile(
                 leading: GoogleUserCircleAvatar(
                   identity: user,
                 ),
                 title: Text(user.displayName ?? ''),
                 subtitle: Text(user.email),
-              )),
+              )) : const Expanded(child: ListTile(
+                leading: Icon(Icons.sync_disabled),
+                title: Text("Offline mode "))),
+
           ElevatedButton(
             onPressed: () {
               _handleSignOut();
@@ -269,7 +384,7 @@ class _FirstRouteState extends State<FirstRoute> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     mainAxisSize: MainAxisSize.max,
                     children: [
-                      getStatusCard(),
+                      ( _connectionStatus != ConnectivityResult.none) ? getStatusCardOnLine() : getStatusCardOffLine() ,
                       Expanded(
                           child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -305,15 +420,55 @@ class _FirstRouteState extends State<FirstRoute> {
           if (!kIsWeb) ...<Widget>[
             ElevatedButton(
               onPressed: _handleSignIn,
-              child: const Text('Sign in'),
-            ),
+              child: const Text('Sign in')),
+
           ]
         ],
       );
     }
   }
 
-  SizedBox getStatusCard() {
+  SizedBox getStatusCardOffLine() {
+    return SizedBox(
+        height: 70,
+        child: Card(
+            elevation: 1,
+            color: Colors.grey[200],
+            child:
+            Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+
+              ...<Widget>[
+                Row(
+                  children: [
+                    const Expanded(
+                        child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Padding(
+                                padding: EdgeInsets.all(2.0),
+                                child: Text("Active sheet :",
+                                    style: TextStyle(fontSize: 16))))),
+                    Expanded(
+                        child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Row(
+                                  children: [
+                                    Text(offLineSheetName,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16)),
+
+                                  ],
+                                )))),
+                  ],
+                )
+              ]
+            ])));
+  }
+
+
+  SizedBox getStatusCardOnLine() {
     return SizedBox(
         height: 70,
         child: Card(
@@ -321,6 +476,7 @@ class _FirstRouteState extends State<FirstRoute> {
             color: Colors.grey[200],
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+
               if (store!.spreadSheet == null) ...<Widget>[
                 Row(children: [
                   Expanded(
@@ -351,6 +507,9 @@ class _FirstRouteState extends State<FirstRoute> {
                                                   prefs.setString("spreadSheetId", file.id);
 
                                                   await loadSheet();
+                                                  String sheetName = store!.spreadSheet!.name;
+                                                  prefs.setString("spreadSheetName", sheetName);
+
                                               }));
                                     },
                                     icon: const Icon(Icons.search))
@@ -392,8 +551,6 @@ class _FirstRouteState extends State<FirstRoute> {
 
                                           setState(() {
                                             store!.spreadSheet = null;
-                                            forms = null;
-
                                           });
                                         },
                                         icon: const Icon(Icons.clear))
@@ -409,6 +566,8 @@ class _FirstRouteState extends State<FirstRoute> {
     List<Widget> widgets = [];
 
     List<Widget> inners = [];
+
+
 
     if (forms != null) {
       for (int formIndex = 0; formIndex < forms!.length; formIndex++) {
@@ -467,26 +626,45 @@ class _FirstRouteState extends State<FirstRoute> {
     return widgets;
   }
 
+  Future<List<FormDescriptor>> getFormsList() async{
+    if( store != null)  {
+      return await store!.getForms();
+    } else  {
+      return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // without this, pop when keyboard is displayed
-      // laied to a moving effect
-        resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: const Text('Google Sign In'),
-      ),
-      body: ConstrainedBox(
-        constraints: const BoxConstraints.expand(),
-        child: DefaultTextStyle.merge(
-            style: const TextStyle(
-              fontSize: 16,
-            ),
-            child: _buildBody()),
-      ),
-    );
+    return FutureBuilder<List<FormDescriptor>>(
+        future: getFormsList(),
+        builder: (context, AsyncSnapshot<List<FormDescriptor>> snapshot) {
+          if (snapshot.hasData) {
+            forms = snapshot.data;
+            return Scaffold(
+              // without this, pop when keyboard is displayed
+              // laied to a moving effect
+              resizeToAvoidBottomInset: false,
+              appBar: AppBar(
+                title: const Text('Home page'),
+              ),
+              body: ConstrainedBox(
+                constraints: const BoxConstraints.expand(),
+                child: DefaultTextStyle.merge(
+                    style: const TextStyle(
+                      fontSize: 16,
+                    ),
+                    child: _buildBody()),
+              ),
+            );
+          } else{
+            return const CircularProgressIndicator();
+            }
+          }
+        );
   }
 }
+
 
 class FormRoute extends StatelessWidget {
   final FrontStore store;

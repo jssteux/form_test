@@ -23,7 +23,7 @@ import 'package:form_test/src/store/front/sheet.dart';
 class FrontStore {
   final Logger logger;
   final Parser parser;
-  final BackStore backStore;
+  BackStore? backStore;
   final AsyncStore asyncStore;
 
   DateTime? lastCheck;
@@ -32,15 +32,34 @@ class FrontStore {
 
   FrontStore(this.backStore, this.asyncStore, this.logger , {this.parser = const Parser()});
 
-  set spreadSheet(FileItem? spreadSheet) { backStore.spreadSheet = spreadSheet;}
-  FileItem? get spreadSheet { return backStore.spreadSheet;}
+  set spreadSheet(FileItem? spreadSheet) {
+    backStore!.spreadSheet = spreadSheet;
+
+  }
+  FileItem? get spreadSheet { return backStore!.spreadSheet;}
+
+  updateBackstore( BackStore? newBackStore) {
+    backStore = newBackStore;
+    asyncStore.backStore = backStore;
+  }
+
+  stop( ) {
+    asyncStore.stop();
+
+  }
+
+
 
   Future<String?> save(File? file) async {
-    return await backStore.save(file);
+    if( backStore != null) {
+      return await backStore!.save(file);
+    }
   }
 
   Future<String?> saveImage(Uint8List? bytes) async {
-    return backStore.saveImage(bytes);
+    if( backStore != null) {
+      return backStore!.saveImage(bytes);
+    }
   }
 
   Future<Directory> getTemporaryDirectory() async {
@@ -53,7 +72,7 @@ class FrontStore {
   }
 
   Future<Uint8List?> read(String url) async {
-    return await backStore.read(url);
+    return await asyncStore.getMedia(url);
 
   }
 
@@ -65,16 +84,20 @@ class FrontStore {
       LinkedHashMap<String, ColumnDescriptor> columns,
       Map<String, CustomImageState> files) async {
 
-      int index = await backStore.saveData(context, await getMetadatas(), sheetName, formValues, columns, files);
+      if( backStore != null) {
+        int index = await backStore!.saveData(
+            context, await getMetadatas(), sheetName, formValues, columns,
+            files);
 
 
-      // update cache
-      SheetDatasCache cache = sheetCaches[sheetName];
+        // update cache
+        SheetDatasCache cache = sheetCaches[sheetName];
 
-      if (index != -1) {
-        cache.sheetContent.datas[index] = formValues;
-      } else {
-        cache.sheetContent.datas.add(formValues);
+        if (index != -1) {
+          cache.sheetContent.datas[index] = formValues;
+        } else {
+          cache.sheetContent.datas.add(formValues);
+        }
       }
 
 
@@ -149,11 +172,10 @@ class FrontStore {
 
       await prepareCascadeRemove( items ,metaDatas, sheetName, id);
 
-      await backStore.removeData( items);
+      if( backStore != null) {
+        await backStore!.removeData(items);
+      }
   }
-
-
-
 
 
 
@@ -181,7 +203,7 @@ class FrontStore {
 
     SheetAsyncCache asyncCache = await asyncStore.getDatas(sheetName);
     if (cache != null) {
-        if (asyncCache.last.isAtSameMomentAs(cache.modifiedTime)) {
+        if (cache.modifiedTime == null || asyncCache.last == null || asyncCache.last!.isAtSameMomentAs(cache.modifiedTime)) {
           return cache.sheetContent;
         }
     }
@@ -491,15 +513,15 @@ class FrontStore {
 
 
 
-
-
-
-
-
-
   Future<List<FileItem>> allFileList( String? id, String? pattern) async {
-    return await backStore.allFileList(id, pattern);
+    if( backStore != null) {
+      return await backStore!.allFileList(id, pattern);
+    } else  {
+      return [];
+    }
   }
+
+
 
 
 }

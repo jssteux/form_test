@@ -39,7 +39,7 @@ class MetaDatas {
 }
 
 class MetaDatasCache {
-  final DateTime modifiedTime;
+  final DateTime? modifiedTime;
   final MetaDatas metaDatas;
   MetaDatasCache( this.metaDatas, this.modifiedTime);
 }
@@ -69,7 +69,7 @@ class SheetDatas {
 
 
 class SheetDatasCache {
-  final DateTime modifiedTime;
+  final DateTime? modifiedTime;
   final SheetDatas sheetContent;
   SheetDatasCache( this.sheetContent, this.modifiedTime);
 }

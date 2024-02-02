@@ -87,7 +87,7 @@ class BackStore {
     return Directory("/files");
   }
 
-  Future<Uint8List?> read(String url) async {
+  Future<Uint8List?> readMedia(String url) async {
     final authHeaders = await account.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
@@ -219,7 +219,7 @@ class BackStore {
       */
 
     // Reload datas
-    List<Map<String, String>> datas = await loadDatas(metaDatas, sheetName);
+    List<Map<String, String>> datas = await loadDatasOld(metaDatas, sheetName);
 
     // Search current item
     var index = -1;
@@ -401,7 +401,7 @@ class BackStore {
 
   Future<Map<String,int>> getSheetsId() async {
 
-    debugPrint("getSheetsId");
+
 
     LinkedHashMap<String, int> sheetIds = LinkedHashMap();
     final authHeaders = await account.authHeaders;
@@ -475,7 +475,10 @@ class BackStore {
 
 
 
-  Future<List<Map<String, String>>> loadDatas(MetaDatas metaDatas, String sheetName) async {
+  Future<List<dynamic>> loadDatas(MetaDatas metaDatas, String sheetName) async {
+
+    debugPrint("loadDatas $sheetName");
+
     final authHeaders = await account.authHeaders;
 
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -496,13 +499,63 @@ class BackStore {
     final response = await authenticateClient.get(Uri.parse(uri));
 
     final data = jsonDecode(response.body.toString());
+
+
+
+    if( data['values'] == null) {
+      // Not values found
+      return [];
+    }
+
+    final List<dynamic> rows = data['values'];
+
+
+
+
+    return rows;
+
+  }
+
+
+  Future<List<Map<String, String>>> loadDatasOld(MetaDatas metaDatas, String sheetName) async {
+
+    debugPrint("loadDatas $sheetName");
+
+    final authHeaders = await account.authHeaders;
+
+    final authenticateClient = GoogleAuthClient(authHeaders);
+
+    if( metaDatas.sheetDescriptors[sheetName] == null) {
+      throw(Exception("sheet not defined"));
+    }
+
+    String? sheetFileId = getSheetFileId();
+
+    String range = "${metaDatas.sheetDescriptors[sheetName]!.firstCol}${metaDatas.sheetDescriptors[sheetName]!.firstRow}:${metaDatas.sheetDescriptors[sheetName]!.lastCol}${metaDatas.sheetDescriptors[sheetName]!.lastRow}";
+
+
+    final encodedRange = Uri.encodeComponent("$sheetName!$range");
+
+    String uri = '$_sheetsEndpoint$sheetFileId/values/$encodedRange';
+
+    final response = await authenticateClient.get(Uri.parse(uri));
+
+    final data = jsonDecode(response.body.toString());
+
+    List<Map<String, String>> res = [];
+
+    if( data['values'] == null) {
+      // Not values found
+      return res;
+    }
+
     final List<dynamic> rows = data['values'];
 
 
     var cols = metaDatas.sheetDescriptors[sheetName]!.columns;
 
 
-    List<Map<String, String>> res = [];
+
     for (int i = 0; i < rows.length; i++) {
       Map<String, String> rowMap = {};
       List<dynamic> rowCells = rows.elementAt(i);
@@ -523,33 +576,9 @@ class BackStore {
 
 
 
-
-
-
-
-  Future<Uint8List?> loadImage(String? url) async {
-    if (url != null && url.isNotEmpty) {
-      Uint8List? content = await read(url);
-      return  content;
-    }
-    return null;
-
-  }
-
-
-
-
-
-
-
-
-
    getSheetFileId()  {
     return spreadSheet!.id;
   }
-
-
-
 
 
 
@@ -628,6 +657,8 @@ class BackStore {
 
     return res;
   }
+
+
 
 
 }
