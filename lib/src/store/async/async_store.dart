@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/cupertino.dart';
@@ -74,7 +75,9 @@ class AsyncStore {
   }
 
   loadDatas (DateTime? last, String sheetName) async {
-   // debugPrint( "async loadDatas $sheetName" );
+
+
+    debugPrint( "loadDatas $sheetName" );
     MetaDatas metaDatas = await getMetadatas();
 
 
@@ -88,13 +91,14 @@ class AsyncStore {
 
 
 
-    // Transform datas
+    // Transform datas to map
     List<Map<String, String>> res = [];
     var cols = metaDatas.sheetDescriptors[sheetName]!.columns;
 
 
     for (int i = 0; i < rows.length; i++) {
       Map<String, String> rowMap = {};
+
       List<dynamic> rowCells = rows.elementAt(i);
       for (int j = 0; j < cols.length; j++) {
         var value = "";
@@ -106,6 +110,35 @@ class AsyncStore {
 
       res.add(rowMap);
     }
+
+
+   // Add updates
+
+    Iterable<FileSystemEntity> files = await filesStore.getSheetUpdates(
+        "UPDATE_$sheetName");
+    for (var file in files) {
+      var path = file.path;
+      debugPrint("add update to cache $path");
+      Map<String, String> updateValues = await filesStore.loadSheetUpdate(
+          path);
+
+      //List<Map<String, String>> res = [];
+      for (Map<String,String> initialValues in res)  {
+        String? initialKey = initialValues["ID"];
+        String? updateKey = updateValues["ID"];
+        if( initialKey != null && updateKey != null && initialKey == updateKey)  {
+              for( var copyKey in updateValues.keys) {
+                initialValues.update(
+                    copyKey, (value) => updateValues[copyKey]!);
+              }
+
+          }
+      }
+
+    }
+
+
+
 
 
     sheetCaches[sheetName] = SheetAsyncCache(last, res);
@@ -136,7 +169,17 @@ class AsyncStore {
 
   }
 
+  saveData(
+  String sheetName,
+  Map<String, String> formValues) async {
 
+
+    await filesStore.saveSheetUpdate("UPDATE_$sheetName", formValues);
+
+    // Update caches
+    await loadDatas(null, sheetName);
+
+  }
 
 
   start() {
@@ -149,12 +192,8 @@ class AsyncStore {
 
     while(continueThread == true) {
 
-
-
       try {
-
-
-        DateTime? last;
+       DateTime? last;
         if( backStore != null) {
 
           int nbTries = 0;
@@ -207,6 +246,25 @@ class AsyncStore {
           }
         }
 
+        // UPDATES
+
+        if( backStore != null) {
+          debugPrint("apply updates");
+          for (String sheetName in metatDatasCaches!.metaDatas.sheetDescriptors
+              .keys) {
+            Iterable<FileSystemEntity> files = await filesStore.getSheetUpdates(
+                "UPDATE_$sheetName");
+            for (var file in files) {
+              var path = file.path;
+              debugPrint("load $path");
+              Map<String, String> values = await filesStore.loadSheetUpdate(
+                  path);
+              await backStore!.saveData(
+                  metatDatasCaches!.metaDatas, sheetName, values);
+              filesStore.removeSheetUpdate(path);
+            }
+          }
+        }
 
 
       } catch(e)  {

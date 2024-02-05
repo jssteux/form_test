@@ -84,8 +84,9 @@ class FrontStore {
       LinkedHashMap<String, ColumnDescriptor> columns,
       Map<String, CustomImageState> files) async {
 
+    /*
       if( backStore != null) {
-        int index = await backStore!.saveData(
+        int index = await backStore!.saveDataOld(
             context, await getMetadatas(), sheetName, formValues, columns,
             files);
 
@@ -99,6 +100,11 @@ class FrontStore {
           cache.sheetContent.datas.add(formValues);
         }
       }
+    else  {
+
+     */
+      await asyncStore.saveData(sheetName, formValues);
+    //}
 
 
     if (context.mounted) {
@@ -199,26 +205,16 @@ class FrontStore {
 
   Future<SheetDatas> getDatas(String sheetName) async {
 
-    var cache = sheetCaches[sheetName];
-
     SheetAsyncCache asyncCache = await asyncStore.getDatas(sheetName);
-    if (cache != null) {
-        if (cache.modifiedTime == null || asyncCache.last == null || asyncCache.last!.isAtSameMomentAs(cache.modifiedTime)) {
-          return cache.sheetContent;
-        }
-    }
 
-    //print('load datas internal');
+    print('front get datas');
     List<Map<String, String>> datas  = asyncCache.rows;
 
     var sheetDescriptor = await loadDescriptor(sheetName);
 
     SheetDatas sheetDatas = SheetDatas( datas, sheetDescriptor!.columns, sheetDescriptor.refDisplayName);
 
-    sheetCaches[sheetName] = SheetDatasCache(sheetDatas, asyncCache.last);
-
-    SheetDatasCache storedCache = sheetCaches[sheetName];
-    return storedCache.sheetContent;
+    return sheetDatas;
 
 
   }
@@ -232,6 +228,8 @@ class FrontStore {
       String? formSheetName, int formIndex, String pattern, Context ctx) async {
     List<FormDescriptor> forms;
 
+    debugPrint("load forms");
+
     if (formSheetName != null) {
       var metadatas = await getMetadatas();
       forms = metadatas.sheetDescriptors[formSheetName]!.formDescriptors;
@@ -242,6 +240,8 @@ class FrontStore {
     FormDescriptor form = forms[formIndex];
 
     String sheetName = form.sheetName;
+
+
 
     SheetDatas datas = await getDatas(sheetName);
 

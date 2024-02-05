@@ -154,7 +154,7 @@ class BackStore {
     return client;
   }
 
-  Future<int> saveData(
+  Future<int> saveDataOld(
       BuildContext context,
       MetaDatas metaDatas,
       String sheetName,
@@ -315,6 +315,125 @@ class BackStore {
 
     return index;
   }
+
+
+  Future<int> saveData(
+      MetaDatas metaDatas,
+      String sheetName,
+      Map<String, String> formValues) async {
+    //test();
+
+    if( metaDatas.sheetDescriptors[sheetName] == null) {
+      throw(Exception("sheet not defined"));
+    }
+
+    var columns = metaDatas.sheetDescriptors[sheetName]!.columns;
+
+    final authHeaders = await account.authHeaders;
+    final authenticateClient = GoogleAuthClient(authHeaders);
+    // Fonctionne avec l'utilisation d'un compte de service
+    //final authenticateClient = await obtainServiceCredentials();
+
+
+    //search main
+    String? sheetFileId = getSheetFileId();
+
+
+    String encodedRange;
+
+    String uri;
+    /*
+    if( account.email == 'jssteux@gmail.com') {
+     uri = '$_sheetsEndpoint$spreadsheetId/values/$encodedRange:append?valueInputOption=RAW';
+    }
+    else {
+      */
+
+    // Reload datas
+    List<Map<String, String>> datas = await loadDatasOld(metaDatas, sheetName);
+
+    // Search current item
+    var index = -1;
+    String? id = formValues["ID"];
+    if (id != null) {
+      for (int i = 0; i < datas.length; i++) {
+        if (datas.elementAt(i)["ID"] == id) {
+          index = i;
+        }
+      }
+    }
+
+    // Create new ID
+    int key = 0;
+    for (int i = 0; i < datas.length; i++) {
+      String? s = datas.elementAt(i)["ID"];
+      if (s != null) {
+        try {
+          var b = int.parse(s);
+          if (b > key) {
+            key = b + 1;
+          }
+        } on Exception catch (_) {}
+      }
+    }
+
+    /* Create values */
+    int nbColumns = columns.length;
+    List<String> values = [];
+
+    for (int i = 0; i < nbColumns; i++) {
+      String name = columns.keys.elementAt(i);
+      String? value = formValues[name];
+      if (value == null) {
+        if (name == "ID") {
+          value = key.toString();
+        } else {
+          value = "";
+        }
+      }
+      values.add(value);
+    }
+
+    int firstRow = metaDatas.sheetDescriptors[sheetName]!.firstRow;
+    String firstCol =  metaDatas.sheetDescriptors[sheetName]!.firstCol;
+
+    String lastColumn = String.fromCharCode(metaDatas.sheetDescriptors[sheetName]!.firstCol.codeUnitAt(0) + nbColumns - 1);
+
+
+      int indexInsertion = index + firstRow;
+      String range = "$sheetName!$firstCol$indexInsertion:$lastColumn$indexInsertion";
+
+      encodedRange = Uri.encodeComponent(range);
+
+      uri =
+      '$_sheetsEndpoint$sheetFileId/values/$encodedRange?valueInputOption=RAW';
+      await authenticateClient.put(
+        //final response = await authenticateClient.put(
+        Uri.parse(uri),
+        body: jsonEncode(
+          {
+            "range": range,
+            "majorDimension": "ROWS",
+            'values': [values],
+          },
+        ),
+      );
+      //print(response.body.toString());
+
+    /*
+  }
+  */
+
+    //print(response.body.toString());
+    //print('save datas');
+
+    return index;
+  }
+
+
+
+
+
 
 
 
