@@ -1,16 +1,24 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import "package:googleapis_auth/auth_io.dart";
 import 'package:googleapis/logging/v2.dart';
 
 
 class Logger {
 
-  late LoggingApi logger;
+  late LoggingApi? logger;
 
-  Logger()  {
-   () async {
-     obtainServiceCredentials();
-    }.call();
+  Logger();
+
+
+
+  Future<void> updateConnectionStatus(ConnectivityResult result) async {
+    if(  result != ConnectivityResult.none) {
+      obtainServiceCredentials();
+    } else  {
+      logger = null;
+    }
   }
+
 
   // Use service account credentials to obtain oauth credentials.
   obtainServiceCredentials() async {
@@ -35,14 +43,16 @@ class Logger {
   }
 
   Future<void> logEvent(String descr) async {
-    final Map<String, String> params = {'message': descr};
-    final logEntry = LogEntry(
-        logName: 'projects/oauth2-demo-334509/logs/store',
-        jsonPayload: params,
-        resource: MonitoredResource(type: 'global'),
-        labels: {'isWeb': '0'});
-    final req = WriteLogEntriesRequest(entries: [logEntry]);
-    logger.entries.write(req);
+    if( logger != null) {
+      final Map<String, String> params = {'message': descr};
+      final logEntry = LogEntry(
+          logName: 'projects/oauth2-demo-334509/logs/store',
+          jsonPayload: params,
+          resource: MonitoredResource(type: 'global'),
+          labels: {'isWeb': '0'});
+      final req = WriteLogEntriesRequest(entries: [logEntry]);
+      logger!.entries.write(req);
+    }
   }
 
 

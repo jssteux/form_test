@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:form_test/src/store/files/abstract_store.dart';
+import 'package:form_test/src/store/files/file_update.dart';
 import 'package:path_provider/path_provider.dart';
 
 Future<String> get _localPath async {
@@ -11,60 +13,74 @@ Future<String> get _localPath async {
   return directory.path;
 }
 
-class FileStore {
-  const FileStore();
+class FileStore extends AbstractFilesStore {
 
+
+  @override
   saveSheetFile(String name, var object) async {
     debugPrint("saveFile $name");
     final path = await _localPath;
-    File file = File('$path/$name');
+    File file = File('$path/_SHEET_$name');
     file.writeAsString(jsonEncode(object));
   }
 
+  @override
   dynamic loadSheetFile(String name) async {
     debugPrint("loadFile $name");
     final path = await _localPath;
-    File file = File('$path/$name');
+    File file = File('$path/_SHEET_$name');
     String savedString = await file.readAsString();
     return jsonDecode(savedString);
   }
 
-  saveSheetUpdate(String name, var object) async {
-    debugPrint("saveFile $name");
-    final path = await _localPath;
-    File file = File('$path/$name');
-    file.writeAsString(jsonEncode(object));
-  }
+  @override
+  saveSheetUpdate(FileUpdate update) async {
 
-  Future<Map<String, String>> loadSheetUpdate(String path) async {
-    File file = File(path);
-    String savedString = await file.readAsString();
-    Map<String, String> values = <String,String>{};
-    Map<String, dynamic> rawMap = jsonDecode(savedString);
-    for( String key in rawMap.keys)  {
-      values.putIfAbsent(key, () => rawMap[key]);
-    }
-    return values;
-  }
+    debugPrint("saveUpdate");
 
-  Future<Iterable<FileSystemEntity>> getSheetUpdates(String name) async {
+    List<FileUpdate> rows = await loadSheetUpdates();
+    rows.add(update);
 
     final path = await _localPath;
-    Directory dir = Directory(path);
-    Iterable<FileSystemEntity> files = dir.listSync().where((e) {
-      var paths = e.path.split("/");
-      if (paths[paths.length - 1].startsWith(name)) {
-        return true;
-      } else {
-        return false;
+    File file = File('$path/_UPDATES');
+
+    file.writeAsString(jsonEncode(rows));
+  }
+
+  @override
+  Future<List<FileUpdate>> loadSheetUpdates() async {
+
+    debugPrint("loadUpdate");
+    final path = await _localPath;
+    File file = File('$path/_UPDATES');
+    List<dynamic> rows;
+    List<FileUpdate> updates=[];
+    if( file.existsSync()) {
+      String savedString = await file.readAsString();
+
+      rows = jsonDecode(savedString);
+      for( var element in rows) {
+         FileUpdate update = FileUpdate.fromJson(element);
+         updates.add(update);
       }
-    });
-    return files;
+
+    } else  {
+      updates = [];
+    }
+    return updates;
   }
 
-  removeSheetUpdate(String path) {
-    File file = File(path);
-    file.deleteSync();
+
+  @override
+  removeSheetUpdate() async {
+    debugPrint("removeUpdate");
+    List<FileUpdate> rows = await loadSheetUpdates();
+    rows.removeAt(0);
+
+    final path = await _localPath;
+    File file = File('$path/_UPDATES');
+
+    file.writeAsString(jsonEncode(rows));
   }
 
 

@@ -114,73 +114,13 @@ class FrontStore {
 
 
 
-  prepareCascadeRemove ( List<ItemToRemove> items, MetaDatas metaDatas, String sheetName,  String id)  async {
-
-
-    // Reload datas
-    SheetDatas sheet = await getDatas(sheetName);
-
-    // Search current item
-    var index = -1;
-
-    for (int i = 0; i < sheet.datas.length; i++) {
-      if (sheet.datas.elementAt(i)["ID"] == id) {
-        index = i;
-      }
-    }
-
-    if( index != -1 ) {
-      int indexRemove = index + 1;
-
-      var item = ItemToRemove(sheetName, indexRemove, indexRemove + 1);
-
-
-      items.add(item);
-
-      // update cache
-      SheetDatasCache cache = sheetCaches[sheetName];
-      cache.sheetContent.datas.removeAt(index);
-
-
-      // get references
-      for(String childSheet in metaDatas.sheetDescriptors.keys) {
-        if( childSheet != sheetName) {
-          var columns = metaDatas.sheetDescriptors[childSheet]!.columns;
-          for (ColumnDescriptor desc in columns.values) {
-            if (desc.reference == sheetName && desc.cascadeDelete) {
-              SheetDatas childDatas = await getDatas(desc.reference);
-              for (int i = 0; i < childDatas.datas.length; i++) {
-                String? childId = childDatas.datas[i]["ID"];
-                if (childId != null && childId == id) {
-                  prepareCascadeRemove(
-                      items, metaDatas, desc.reference, childId);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-
 
 
   removeData(
       BuildContext context,
       String sheetName,
       String id) async {
-    //test();
-
-      MetaDatas metaDatas = await getMetadatas();
-
-      List<ItemToRemove> items =   [  ];
-
-      await prepareCascadeRemove( items ,metaDatas, sheetName, id);
-
-      if( backStore != null) {
-        await backStore!.removeData(items);
-      }
+    await asyncStore.removeData(sheetName, id);
   }
 
 

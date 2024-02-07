@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -203,6 +204,8 @@ class _FirstRouteState extends State<FirstRoute> {
     setState(() {
       _connectionStatus = result;
     });
+
+    logger.updateConnectionStatus(result);
 
     if( _connectionStatus != ConnectivityResult.none) {
       // if( store != null) -> not on logout or startup
