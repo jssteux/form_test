@@ -70,7 +70,9 @@ class MyCustomFormState extends State<MyCustomForm> {
     String columnName = columns.keys.elementAt(formIndex);
     ColumnDescriptor columDescriptor = columns[columnName]!;
 
-    if (columDescriptor.reference.isNotEmpty) {
+    if( columnName == "ID" ) {
+      return const Text("");
+    } else   if (columDescriptor.reference.isNotEmpty) {
       var myController =
           TextEditingController(text: referenceLabels[columnName]);
       controllers.putIfAbsent(columnName, () => myController);
@@ -389,7 +391,8 @@ class MyCustomFormState extends State<MyCustomForm> {
                                       ColumnDescriptor columDescriptor =
                                       columns[columnName]!;
 
-                                      if (columDescriptor.reference.isNotEmpty) {
+                                      if (columnName == "ID") {
+                                      } else  if (columDescriptor.reference.isNotEmpty) {
                                         formValues.putIfAbsent(columnName,
                                                 () => referencesValues[columnName]!);
                                       } else if (columDescriptor.type ==
@@ -406,12 +409,24 @@ class MyCustomFormState extends State<MyCustomForm> {
                                       }
                                     }
 
-                                    widget.store.saveData(
+
+
+
+                                    if( widget.rowIndex == -1) {
+                                          widget.store.createDatas(
+                                          context,
+                                          widget.sheetName,
+                                          formValues,
+                                          columns,
+                                          files);
+                                    }   else  {
+                                      widget.store.modifyDatas(
                                         context,
                                         widget.sheetName,
                                         formValues,
                                         columns,
                                         files);
+                                    }
                                   }
                                 },
                                 child: const Padding(

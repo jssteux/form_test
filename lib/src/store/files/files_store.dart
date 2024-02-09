@@ -29,8 +29,12 @@ class FileStore extends AbstractFilesStore {
     debugPrint("loadFile $name");
     final path = await _localPath;
     File file = File('$path/_SHEET_$name');
-    String savedString = await file.readAsString();
-    return jsonDecode(savedString);
+    if( await file.exists()) {
+      String savedString = await file.readAsString();
+      return jsonDecode(savedString);
+    } else  {
+      return null;
+    }
   }
 
   @override
@@ -82,6 +86,7 @@ class FileStore extends AbstractFilesStore {
 
     file.writeAsString(jsonEncode(rows));
   }
+
 
 
 }

@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+
 /// An abstract expression that can be evaluated.
 abstract class Expression {
   /// Evaluates the expression with the provided [variables].
@@ -89,7 +91,10 @@ class Current extends Expression {
     dynamic valueE = value.eval(variables);
 
       if( variables["_SHEET_NAME"] == valueE) {
-            return variables["_SHEET_ITEM_ID"];
+
+            String itemId =  variables["_SHEET_ITEM_ID"];
+            debugPrint("evalcurrent $valueE $itemId");
+            return itemId;
      }
 
 

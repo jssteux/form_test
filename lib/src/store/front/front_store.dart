@@ -77,7 +77,7 @@ class FrontStore {
   }
 
 
-  saveData(
+  createDatas(
       BuildContext context,
       String sheetName,
       Map<String, String> formValues,
@@ -103,7 +103,43 @@ class FrontStore {
     else  {
 
      */
-      await asyncStore.saveData(sheetName, formValues);
+    await asyncStore.createDatas(sheetName, formValues);
+    //}
+
+
+    if (context.mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+
+  modifyDatas(
+      BuildContext context,
+      String sheetName,
+      Map<String, String> formValues,
+      LinkedHashMap<String, ColumnDescriptor> columns,
+      Map<String, CustomImageState> files) async {
+
+    /*
+      if( backStore != null) {
+        int index = await backStore!.saveDataOld(
+            context, await getMetadatas(), sheetName, formValues, columns,
+            files);
+
+
+        // update cache
+        SheetDatasCache cache = sheetCaches[sheetName];
+
+        if (index != -1) {
+          cache.sheetContent.datas[index] = formValues;
+        } else {
+          cache.sheetContent.datas.add(formValues);
+        }
+      }
+    else  {
+
+     */
+      await asyncStore.modifyDatas(sheetName, formValues);
     //}
 
 
@@ -148,6 +184,7 @@ class FrontStore {
     SheetAsyncCache asyncCache = await asyncStore.getDatas(sheetName);
 
     print('front get datas');
+
     List<Map<String, String>> datas  = asyncCache.rows;
 
     var sheetDescriptor = await loadDescriptor(sheetName);
@@ -168,7 +205,7 @@ class FrontStore {
       String? formSheetName, int formIndex, String pattern, Context ctx) async {
     List<FormDescriptor> forms;
 
-    debugPrint("load forms");
+    debugPrint("front load forms");
 
     if (formSheetName != null) {
       var metadatas = await getMetadatas();
@@ -249,7 +286,13 @@ class FrontStore {
 
     String fullText = "";
 
+    debugPrint("********* variables *********");
+
+
     for (String variable in datas.columns.keys) {
+
+      debugPrint("variable $variable=" + datas.datas[i][variable].toString());
+
       variables[variable] = datas.datas[i][variable];
 
       ColumnDescriptor? desc = datas.columns[variable];

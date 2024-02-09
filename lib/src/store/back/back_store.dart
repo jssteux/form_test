@@ -24,7 +24,14 @@ class BackStore {
   DateTime? lastCheck;
   FileItem? spreadSheet ;
 
+
+
   BackStore(this.account, this.logger);
+
+
+
+
+
 
   Future<String?> save(File? file) async {
     if (file == null) {
@@ -154,167 +161,6 @@ class BackStore {
     return client;
   }
 
-  Future<int> saveDataOld(
-      BuildContext context,
-      MetaDatas metaDatas,
-      String sheetName,
-      Map<String, String> formValues,
-      LinkedHashMap<String, ColumnDescriptor> columns,
-      Map<String, CustomImageState> files) async {
-    //test();
-
-    if( metaDatas.sheetDescriptors[sheetName] == null) {
-      throw(Exception("sheet not defined"));
-    }
-
-    for (int i = 0; i < files.length; i++) {
-      var key = files.keys.elementAt(i);
-      var file = files[key];
-
-      String? id;
-      if (file is CustomImageState) {
-        if (file.modified) {
-          if (file.content != null) {
-            id = await saveImage(file.content);
-          } else {
-            id = "";
-          }
-        }
-      } else {
-        id = await save(file);
-      }
-
-      if (id != null) {
-        String? columnName;
-        columnName = columns.keys.elementAt(int.parse(key));
-        if (columnName.isNotEmpty) {
-          if (id.isNotEmpty) {
-            formValues[columnName] = "https://drive.google.com/file/d/$id/view";
-          } else {
-            formValues[columnName] = "";
-          }
-        }
-      }
-    }
-    final authHeaders = await account.authHeaders;
-    final authenticateClient = GoogleAuthClient(authHeaders);
-    // Fonctionne avec l'utilisation d'un compte de service
-    //final authenticateClient = await obtainServiceCredentials();
-
-
-    //search main
-    String? sheetFileId = getSheetFileId();
-
-
-
-
-    String encodedRange;
-
-    String uri;
-    /*
-    if( account.email == 'jssteux@gmail.com') {
-     uri = '$_sheetsEndpoint$spreadsheetId/values/$encodedRange:append?valueInputOption=RAW';
-    }
-    else {
-      */
-
-    // Reload datas
-    List<Map<String, String>> datas = await loadDatasOld(metaDatas, sheetName);
-
-    // Search current item
-    var index = -1;
-    String? id = formValues["ID"];
-    if (id != null) {
-      for (int i = 0; i < datas.length; i++) {
-        if (datas.elementAt(i)["ID"] == id) {
-          index = i;
-        }
-      }
-    }
-
-    // Create new ID
-    int key = 0;
-    for (int i = 0; i < datas.length; i++) {
-      String? s = datas.elementAt(i)["ID"];
-      if (s != null) {
-        try {
-          var b = int.parse(s);
-          if (b > key) {
-            key = b + 1;
-          }
-        } on Exception catch (_) {}
-      }
-    }
-
-    /* Create values */
-    int nbColumns = columns.length;
-    List<String> values = [];
-
-    for (int i = 0; i < nbColumns; i++) {
-      String name = columns.keys.elementAt(i);
-      String? value = formValues[name];
-      if (value == null) {
-        if (name == "ID") {
-          value = key.toString();
-        } else {
-          value = "";
-        }
-      }
-      values.add(value);
-    }
-
-    int firstRow = metaDatas.sheetDescriptors[sheetName]!.firstRow;
-    String firstCol =  metaDatas.sheetDescriptors[sheetName]!.firstCol;
-
-    String lastColumn = String.fromCharCode(metaDatas.sheetDescriptors[sheetName]!.firstCol.codeUnitAt(0) + nbColumns - 1);
-
-    if (index == -1) {
-      String range = '$sheetName!$firstCol$firstRow:$lastColumn$firstRow';
-      encodedRange = Uri.encodeComponent(range);
-      uri =
-          '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW';
-
-      //final response = await authenticateClient.post(
-      await authenticateClient.post(
-        Uri.parse(uri),
-        body: jsonEncode(
-          {
-            "range": range,
-            "majorDimension": "ROWS",
-            'values': [values],
-          },
-        ),
-      );
-    } else {
-      int indexInsertion = index + firstRow;
-      String range = "$sheetName!$firstCol$indexInsertion:$lastColumn$indexInsertion";
-
-      encodedRange = Uri.encodeComponent(range);
-
-      uri =
-          '$_sheetsEndpoint$sheetFileId/values/$encodedRange?valueInputOption=RAW';
-      await authenticateClient.put(
-        //final response = await authenticateClient.put(
-        Uri.parse(uri),
-        body: jsonEncode(
-          {
-            "range": range,
-            "majorDimension": "ROWS",
-            'values': [values],
-          },
-        ),
-      );
-      //print(response.body.toString());
-    }
-    /*
-  }
-  */
-
-    //print(response.body.toString());
-    //print('save datas');
-
-    return index;
-  }
 
 
   Future<int> saveData(
@@ -350,7 +196,8 @@ class BackStore {
       */
 
     // Reload datas
-    List<Map<String, String>> datas = await loadDatasOld(metaDatas, sheetName);
+    List<dynamic> rows = await loadDatas(metaDatas, sheetName);
+    List<Map<String, String>> datas = transformSheetRowsToMap(rows, metaDatas, sheetName);
 
     // Search current item
     var index = -1;
@@ -363,19 +210,7 @@ class BackStore {
       }
     }
 
-    // Create new ID
-    int key = 0;
-    for (int i = 0; i < datas.length; i++) {
-      String? s = datas.elementAt(i)["ID"];
-      if (s != null) {
-        try {
-          var b = int.parse(s);
-          if (b > key) {
-            key = b + 1;
-          }
-        } on Exception catch (_) {}
-      }
-    }
+
 
     /* Create values */
     int nbColumns = columns.length;
@@ -384,13 +219,7 @@ class BackStore {
     for (int i = 0; i < nbColumns; i++) {
       String name = columns.keys.elementAt(i);
       String? value = formValues[name];
-      if (value == null) {
-        if (name == "ID") {
-          value = key.toString();
-        } else {
-          value = "";
-        }
-      }
+      value ??= "";
       values.add(value);
     }
 
@@ -399,7 +228,24 @@ class BackStore {
 
     String lastColumn = String.fromCharCode(metaDatas.sheetDescriptors[sheetName]!.firstCol.codeUnitAt(0) + nbColumns - 1);
 
+    if (index == -1) {
+      String range = '$sheetName!$firstCol$firstRow:$lastColumn$firstRow';
+      encodedRange = Uri.encodeComponent(range);
+      uri =
+      '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW';
 
+      //final response = await authenticateClient.post(
+      await authenticateClient.post(
+        Uri.parse(uri),
+        body: jsonEncode(
+          {
+            "range": range,
+            "majorDimension": "ROWS",
+            'values': [values],
+          },
+        ),
+      );
+    } else {
       int indexInsertion = index + firstRow;
       String range = "$sheetName!$firstCol$indexInsertion:$lastColumn$indexInsertion";
 
@@ -419,7 +265,7 @@ class BackStore {
         ),
       );
       //print(response.body.toString());
-
+    }
     /*
   }
   */
@@ -520,7 +366,7 @@ class BackStore {
 
   Future<Map<String,int>> getSheetsId() async {
 
-
+    debugPrint("getSheetsId");
 
     LinkedHashMap<String, int> sheetIds = LinkedHashMap();
     final authHeaders = await account.authHeaders;
@@ -537,7 +383,7 @@ class BackStore {
     );
 
 
-    //print(getResponse.body.toString());
+    debugPrint(getResponse.body.toString());
     final parsed = jsonDecode(getResponse.body.toString());
     List sheets = parsed["sheets"];
     for(Map sheet in sheets)  {
@@ -592,7 +438,29 @@ class BackStore {
     throw Exception("Spreadsheet not found");
   }
 
+  List<Map<String, String>> transformSheetRowsToMap(
+      List<dynamic> rows, MetaDatas metaDatas, String sheetName) {
+    // Transform datas to map
+    List<Map<String, String>> res = [];
+    var cols = metaDatas.sheetDescriptors[sheetName]!.columns;
 
+    for (int i = 0; i < rows.length; i++) {
+      Map<String, String> rowMap = {};
+
+      List<dynamic> rowCells = rows.elementAt(i);
+      for (int j = 0; j < cols.length; j++) {
+        var value = "";
+        if (j < rowCells.length) {
+          value = rowCells.elementAt(j);
+        }
+        rowMap.putIfAbsent(cols.keys.elementAt(j), () => value);
+      }
+
+      res.add(rowMap);
+    }
+
+    return res;
+  }
 
   Future<List<dynamic>> loadDatas(MetaDatas metaDatas, String sheetName) async {
 
@@ -636,62 +504,6 @@ class BackStore {
   }
 
 
-  Future<List<Map<String, String>>> loadDatasOld(MetaDatas metaDatas, String sheetName) async {
-
-    debugPrint("loadDatas $sheetName");
-
-    final authHeaders = await account.authHeaders;
-
-    final authenticateClient = GoogleAuthClient(authHeaders);
-
-    if( metaDatas.sheetDescriptors[sheetName] == null) {
-      throw(Exception("sheet not defined"));
-    }
-
-    String? sheetFileId = getSheetFileId();
-
-    String range = "${metaDatas.sheetDescriptors[sheetName]!.firstCol}${metaDatas.sheetDescriptors[sheetName]!.firstRow}:${metaDatas.sheetDescriptors[sheetName]!.lastCol}${metaDatas.sheetDescriptors[sheetName]!.lastRow}";
-
-
-    final encodedRange = Uri.encodeComponent("$sheetName!$range");
-
-    String uri = '$_sheetsEndpoint$sheetFileId/values/$encodedRange';
-
-    final response = await authenticateClient.get(Uri.parse(uri));
-
-    final data = jsonDecode(response.body.toString());
-
-    List<Map<String, String>> res = [];
-
-    if( data['values'] == null) {
-      // Not values found
-      return res;
-    }
-
-    final List<dynamic> rows = data['values'];
-
-
-    var cols = metaDatas.sheetDescriptors[sheetName]!.columns;
-
-
-
-    for (int i = 0; i < rows.length; i++) {
-      Map<String, String> rowMap = {};
-      List<dynamic> rowCells = rows.elementAt(i);
-      for (int j = 0; j < cols.length; j++) {
-        var value = "";
-        if (j < rowCells.length) {
-          value = rowCells.elementAt(j);
-        }
-        rowMap.putIfAbsent(cols.keys.elementAt(j), () => value);
-      }
-
-      res.add(rowMap);
-    }
-
-    return res;
-
-  }
 
 
 
