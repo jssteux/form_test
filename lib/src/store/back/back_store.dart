@@ -241,7 +241,7 @@ class BackStore {
         Uri.parse(uri),
         body: jsonEncode(
           {
-            "range": range,
+
             "majorDimension": "ROWS",
             'values': [values],
           },
@@ -289,9 +289,11 @@ class BackStore {
 
 
   removeData(
+      MetaDatas metaDatas,
   List<ItemToRemove> items)
   async {
     //test();
+
 
 
     final authHeaders = await account.authHeaders;
@@ -313,13 +315,15 @@ class BackStore {
 
     for(ItemToRemove item in items) {
 
+      int firstRow = metaDatas.sheetDescriptors[item.sheetName]!.firstRow;
+
       var request = {
         "deleteDimension": {
           "range": {
             "sheetId": sheetIds[item.sheetName],
             "dimension": "ROWS",
-            "startIndex": item.startIndex,
-            "endIndex": item.endIndex,
+            "startIndex": item.startIndex + firstRow - 2,
+            "endIndex": item.endIndex + firstRow - 2,
           }
         }
       };

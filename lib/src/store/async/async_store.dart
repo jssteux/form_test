@@ -450,7 +450,7 @@ class AsyncStore {
                 await prepareCascadeRemove(
                     removedItems, metatDatasCaches!.metaDatas, update.sheetName,
                     id, false);
-                await backStore!.removeData(removedItems);
+                await backStore!.removeData(metatDatasCaches!.metaDatas,removedItems);
                 for(var itemToRemove in removedItems) {
                   sheetsToReload.add(itemToRemove.sheetName);
                 }
