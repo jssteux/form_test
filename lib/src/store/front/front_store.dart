@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart';
 import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/custom_image_state.dart';
 import 'package:form_test/src/store/async/async_store.dart';
-import 'package:form_test/src/store/back/back_store_api.dart';
 import 'package:form_test/src/store/back/back_store.dart';
 import 'package:form_test/src/store/front/form_descriptor.dart';
 import 'package:form_test/logger.dart';
@@ -50,13 +49,13 @@ class FrontStore {
 
 
 
-  Future<String?> save(File? file) async {
+  save(File? file) async {
     if( backStore != null) {
       return await backStore!.save(file);
     }
   }
 
-  Future<String?> saveImage(Uint8List? bytes) async {
+  saveImage(Uint8List? bytes) async {
     if( backStore != null) {
       return backStore!.saveImage(bytes);
     }
@@ -183,7 +182,7 @@ class FrontStore {
 
     SheetAsyncCache asyncCache = await asyncStore.getDatas(sheetName);
 
-    print('front get datas');
+    debugPrint('front get datas');
 
     List<Map<String, String>> datas  = asyncCache.rows;
 
@@ -292,7 +291,7 @@ class FrontStore {
 
     for (String variable in datas.columns.keys) {
 
-      debugPrint("variable $variable=" + datas.datas[i][variable].toString());
+      debugPrint("variable $variable=${datas.datas[i][variable]}");
 
       variables[variable] = datas.datas[i][variable];
 
@@ -382,7 +381,7 @@ class FrontStore {
     SheetDatas datas = await getDatas(sheetName);
     SheetDescriptor? desc = await loadDescriptor(sheetName);
     if( desc != null) {
-      return getReferenceLabelInternal(desc!, datas, ref);
+      return getReferenceLabelInternal(desc, datas, ref);
     } else {
       return "";
     }

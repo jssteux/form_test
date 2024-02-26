@@ -1,4 +1,4 @@
-import 'dart:collection';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -17,18 +17,18 @@ class FileStore extends AbstractFilesStore {
 
 
   @override
-  saveSheetFile(String name, var object) async {
-    debugPrint("saveFile $name");
+  saveSheetFile(String sheetName, var object) async {
+    debugPrint("saveFile $sheetName");
     final path = await _localPath;
-    File file = File('$path/_SHEET_$name');
+    File file = File('$path/_SHEET_$sheetName');
     file.writeAsString(jsonEncode(object));
   }
 
   @override
-  dynamic loadSheetFile(String name) async {
-    debugPrint("loadFile $name");
+  dynamic loadSheetFile(String sheetName) async {
+    debugPrint("loadFile $sheetName");
     final path = await _localPath;
-    File file = File('$path/_SHEET_$name');
+    File file = File('$path/_SHEET_$sheetName');
     if( await file.exists()) {
       String savedString = await file.readAsString();
       return jsonDecode(savedString);

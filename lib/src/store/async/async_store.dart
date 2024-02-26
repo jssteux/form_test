@@ -1,8 +1,5 @@
 import 'dart:collection';
-import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:form_test/column_descriptor.dart';
 import 'package:form_test/logger.dart';
@@ -63,7 +60,7 @@ class AsyncStore {
     if (mediaCaches[url] == null) {
       var datas = await backStore!.readMedia(url);
       if (datas != null) {
-        MediaCache mediaCache = MediaCache(datas!);
+        MediaCache mediaCache = MediaCache(datas);
         mediaCaches[url] = mediaCache;
       }
     }
@@ -95,9 +92,7 @@ class AsyncStore {
       rows = (await filesStore.loadSheetFile(sheetName)) as List;
     }
 
-    List<Map<String, String>> res = transformSheetRowsToMap(rows, metaDatas, sheetName);
-
-    return transformSheetRowsToMap(rows, metaDatas, sheetName);
+      return transformSheetRowsToMap(rows, metaDatas, sheetName);
   }
 
 
@@ -332,12 +327,12 @@ class AsyncStore {
         .saveSheetUpdate(FileUpdate("remove", sheetName, formValues));
 
 
-    if (id != null) {
+
       List<ItemToRemove> removedItems = [];
 
       await prepareCascadeRemove(
           removedItems, metatDatasCaches!.metaDatas, sheetName,
-          id!, true);
+          id, true);
 
       for (var itemToRemove in removedItems) {
         Map<String, String> formValues = {};
@@ -348,7 +343,7 @@ class AsyncStore {
             .saveSheetUpdate(
             FileUpdate("removeFromCache", itemToRemove.sheetName, formValues));
       }
-    }
+
 
     }
 
@@ -412,9 +407,9 @@ class AsyncStore {
               if (backStore == null) {
                 reloadSheet = false;
               } else {
-                if (cache!.last != null &&
+                if (cache.last != null &&
                     last != null &&
-                    last.isAtSameMomentAs(cache!.last!)) {
+                    last.isAtSameMomentAs(cache.last!)) {
                   reloadSheet = false;
                 }
               }
@@ -454,7 +449,7 @@ class AsyncStore {
                 List<ItemToRemove> removedItems = [];
                 await prepareCascadeRemove(
                     removedItems, metatDatasCaches!.metaDatas, update.sheetName,
-                    id!, false);
+                    id, false);
                 await backStore!.removeData(removedItems);
                 for(var itemToRemove in removedItems) {
                   sheetsToReload.add(itemToRemove.sheetName);
