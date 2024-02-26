@@ -128,24 +128,20 @@ class AsyncStore {
 
   /* Reload datas (applying updates) */
 
+
+
   loadDatas(DateTime? last, String sheetName, bool forceReload) async {
-    List<Map<String, String>> res = await loadDatasInternal( last,  sheetName,  forceReload,  false);
-    sheetCaches[sheetName] = SheetAsyncCache(last, res);
-  }
 
 
+    debugPrint("loadDatas  $sheetName forceReload $forceReload");
 
-  loadDatasInternal(DateTime? last, String sheetName, bool forceReload, bool recursiveCall) async {
-
-
-    debugPrint("loadDatasInternal forceReload $forceReload");
-
-    debugPrint("loadDatas $sheetName");
     MetaDatas metaDatas = await getMetadatas();
 
     List<Map<String, String>> res = await getLastSheetData(metaDatas,sheetName, forceReload);
 
     // Add updates
+
+    debugPrint("loadDatas  $sheetName beforeUpdate");
 
     List<FileUpdate> updates = await filesStore.loadSheetUpdates();
     for (var update in updates) {
@@ -173,29 +169,20 @@ class AsyncStore {
         }
       }
 
-      if( recursiveCall == false) {
-        if (update.action == "remove") {
-          List<ItemToRemove> removedItems = [];
-          String? id = update.datas["ID"];
-          if (id != null) {
-            debugPrint("remove from cache");
-
-            await prepareCascadeRemove(
-                removedItems, metaDatas, update.sheetName, id!, true);
-
-            for (ItemToRemove item in removedItems) {
-              debugPrint("remove from cache ${item.id}");
-              res.removeWhere((element) =>
-              sheetName == item.sheetName && element["ID"] == item.id);
-            }
-          }
-        }
+     if (update.action == "removeFromCache") {
+       if (update.sheetName == sheetName) {
+         res.removeWhere((element) =>
+          element["ID"] == update.datas["ID"]);
+       }
       }
     }
-/*
-    if(  sheetName == "CLIENT")  {
- //   if( sheetName == "PURCHASE" || sheetName == "CLIENT")  {
-      debugPrint("****************$sheetName***************");
+
+    debugPrint("loadDatas  $sheetName after Update");
+
+ //   if(  sheetName == "CLIENT")  {
+
+    if( sheetName == "PURCHASE" )  {
+      debugPrint("**********loadData internal return $sheetName ***************");
       for( var line in res) {
           debugPrint("------------");
           for(String key in line.keys)  {
@@ -205,7 +192,8 @@ class AsyncStore {
       }
 
     }
-*/
+
+   sheetCaches[sheetName] = SheetAsyncCache(last, res);
    return res;
   }
 
@@ -252,12 +240,14 @@ class AsyncStore {
       String sheetName, String id, bool cache) async {
 
 
+    debugPrint("prepareCascadeRemove $sheetName $id");
+
+
     List<Map<String, String>> datas;
     // Refresh datas
 
     if( cache) {
-
-      datas = await loadDatasInternal(null, sheetName, false, true);
+      datas = await loadDatas(null, sheetName, false);
     } else {
       List<dynamic> rows = await backStore!.loadDatas(metaDatas, sheetName);
       datas = transformSheetRowsToMap(rows, metaDatas, sheetName);
@@ -271,6 +261,8 @@ class AsyncStore {
         index = i;
       }
     }
+
+    debugPrint("prepareCascadeRemove $sheetName index=$index");
 
     if (index != -1) {
       int indexRemove = index + 1;
@@ -286,14 +278,23 @@ class AsyncStore {
           var columns = metaDatas.sheetDescriptors[childSheet]!.columns;
           for (ColumnDescriptor desc in columns.values) {
             if (desc.reference == sheetName && desc.cascadeDelete) {
-              SheetAsyncCache childAsyncCache = await getDatas(childSheet);
-              List<Map<String, String>> childDatas = childAsyncCache.rows;
+              List<Map<String, String>> childDatas;
+              if( cache) {
+                childDatas = await loadDatas(null, childSheet, false);
+              } else {
+                List<dynamic> rows = await backStore!.loadDatas(metaDatas, childSheet);
+                childDatas = transformSheetRowsToMap(rows, metaDatas, childSheet);
+              }
+
               for (int i = 0; i < childDatas.length; i++) {
                 String? idRef= childDatas[i][ desc.name];
                 if( idRef != null && idRef == id) {
                   String? childId = childDatas[i]["ID"];
                   if (childId != null ) {
-                    prepareCascadeRemove(
+
+                    debugPrint("prepareCascadeRemove call child sheet $childSheet");
+
+                    await prepareCascadeRemove(
                         items, metaDatas, childSheet, childId, cache);
                   }
                 }
@@ -308,12 +309,31 @@ class AsyncStore {
   removeData(String sheetName, String id) async {
     //test();
 
+    debugPrint("----- removeData $sheetName $id");
+
     Map<String, String> formValues = {};
     formValues["ID"] = id;
     await filesStore
         .saveSheetUpdate(FileUpdate("remove", sheetName, formValues));
 
 
+    if (id != null) {
+      List<ItemToRemove> removedItems = [];
+
+      await prepareCascadeRemove(
+          removedItems, metatDatasCaches!.metaDatas, sheetName,
+          id!, true);
+
+      for(var itemToRemove in removedItems) {
+        Map<String, String> formValues = {};
+        formValues["ID"] = itemToRemove.id;
+        debugPrint("add removeFromCache ${itemToRemove.sheetName} ${formValues["ID"]}");
+        await filesStore
+            .saveSheetUpdate(FileUpdate("removeFromCache", itemToRemove.sheetName, formValues));
+     }
+
+
+    }
 
 
 
@@ -400,7 +420,6 @@ class AsyncStore {
 
             if( update.action == "modify") {
 
-
               await backStore!.saveData(
                   metatDatasCaches!.metaDatas, update.sheetName, update.datas);
               sheetsToReload.add(update.sheetName);
@@ -423,9 +442,8 @@ class AsyncStore {
                 for(var itemToRemove in removedItems) {
                   sheetsToReload.add(itemToRemove.sheetName);
                 }
-
               }
-            }
+           }
 
             await filesStore.removeSheetUpdate();
 
