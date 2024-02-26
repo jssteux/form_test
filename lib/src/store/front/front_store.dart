@@ -201,14 +201,15 @@ class FrontStore {
 
 
 
-  Future<FormDatas> loadForm(
+  Future<ListDatas> loadForm(
       String? formSheetName, int formIndex, String pattern, Context ctx) async {
     List<FormDescriptor> forms;
 
     debugPrint("front load forms");
 
+    var metadatas = await getMetadatas();
+
     if (formSheetName != null) {
-      var metadatas = await getMetadatas();
       forms = metadatas.sheetDescriptors[formSheetName]!.formDescriptors;
     } else {
       forms = await getForms();
@@ -276,7 +277,7 @@ class FrontStore {
       }
     }
 
-    return FormDatas(filteredLines, datas.columns, form);
+    return ListDatas(filteredLines, metadatas.sheetDescriptors[form.sheetName]!.primaryKey, datas.columns, form);
 
   }
 
@@ -318,27 +319,32 @@ class FrontStore {
       String sheetName, String pattern) async {
     List<FormSuggestionItem> items = [];
     SheetDatas datas = await getDatas(sheetName);
-    for (int i = 0; i < datas.datas.length; i++) {
-      bool insert = false;
+    SheetDescriptor? desc = await loadDescriptor(sheetName);
+    if( desc != null) {
+      for (int i = 0; i < datas.datas.length; i++) {
+        bool insert = false;
 
-      var dataLine = datas.datas[i];
+        var dataLine = datas.datas[i];
 
-      for (int j = 0; j < datas.columns.keys.length; j++) {
-        var columnName = datas.columns.keys.elementAt(j);
-        if (dataLine[columnName]!.startsWith(pattern)) {
-          insert = true;
+        for (int j = 0; j < datas.columns.keys.length; j++) {
+          var columnName = datas.columns.keys.elementAt(j);
+          if (dataLine[columnName]!.startsWith(pattern)) {
+            insert = true;
+          }
+        }
+
+        if (insert) {
+          String? ref = datas.datas[i][desc.primaryKey];
+          String? label = getLabelInternal(datas, i);
+          if (ref != null && label != null) {
+            items.add(FormSuggestionItem(ref, label));
+          }
         }
       }
-
-      if (insert) {
-        String? ref = datas.datas[i]["ID"];
-        String? label = getLabelInternal(datas, i);
-        if (ref != null && label != null) {
-          items.add(FormSuggestionItem(ref, label));
-        }
-      }
+      return items;
+    } else  {
+      return [];
     }
-    return items;
   }
 
   String? getLabelInternal(SheetDatas datas, int i) {
@@ -356,12 +362,12 @@ class FrontStore {
     return value;
   }
 
-  String getReferenceLabelInternal(SheetDatas datas, String ref) {
+  String getReferenceLabelInternal(SheetDescriptor desc, SheetDatas datas, String ref) {
     for (int i = 0; i < datas.datas.length; i++) {
-      String? currentRef = datas.datas[i]["ID"];
+      String? currentRef = datas.datas[i][desc.primaryKey];
       if (currentRef != null) {
         if (currentRef == ref) {
-          String? ref = datas.datas[i]["ID"];
+          String? ref = datas.datas[i][desc.primaryKey];
           String? currentLabel = getLabelInternal(datas, i);
           if (ref != null && currentLabel != null) {
             return currentLabel;
@@ -374,7 +380,12 @@ class FrontStore {
 
   Future<String> getReferenceLabel(String sheetName, String ref) async {
     SheetDatas datas = await getDatas(sheetName);
-    return getReferenceLabelInternal(datas, ref);
+    SheetDescriptor? desc = await loadDescriptor(sheetName);
+    if( desc != null) {
+      return getReferenceLabelInternal(desc!, datas, ref);
+    } else {
+      return "";
+    }
   }
 
   Future<DatasRow> loadRow(
@@ -434,10 +445,10 @@ class FrontStore {
 
 
     var metadatas = await getMetadatas();
-    List<FormDescriptor> forms =
-        metadatas.sheetDescriptors[sheetName]!.formDescriptors;
 
-    return DatasRow(rowDatas, columns, rowFiles, referenceLabels, forms);
+    SheetDescriptor sheetDescriptor =  metadatas.sheetDescriptors[sheetName]!;
+
+    return DatasRow(rowDatas, sheetDescriptor.primaryKey, columns, rowFiles, referenceLabels, sheetDescriptor.formDescriptors);
   }
 
 

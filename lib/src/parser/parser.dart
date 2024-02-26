@@ -106,6 +106,8 @@ class Parser {
           int firstRow = 1;
           String lastCol = 'Z';
           int lastRow = 1000;
+          String primaryKey="ID";
+
 
           for (var subStep in element.children) {
             if (subStep is ParserProperty) {
@@ -125,6 +127,7 @@ class Parser {
                 String reference = "";
                 bool mandatory = false;
                 String defaultValue = "";
+                bool primaryKey = false;
                 bool cascadeDelete = false;
 
                 for (var propertySheet in subStep.children) {
@@ -146,6 +149,11 @@ class Parser {
                         cascadeDelete = true;
                       }
                     }
+                    if (propertySheet.name == "PRIMARY_KEY") {
+                      if ("TRUE" == propertySheet.value) {
+                        primaryKey = true;
+                      }
+                    }
                     if (propertySheet.name == "MANDATORY") {
                       if ("TRUE" == propertySheet.value) {
                         mandatory = true;
@@ -161,7 +169,7 @@ class Parser {
                   columnsDescriptor.putIfAbsent(
                       name,
                       () => ColumnDescriptor(name!, type, label, reference,
-                          cascadeDelete, mandatory, defaultValue));
+                          primaryKey, cascadeDelete, mandatory, defaultValue));
                   //print('add column$name $type');
                 }
               }
@@ -194,13 +202,25 @@ class Parser {
           }
 
           if (sheetName != null) {
+
+
+
             List<FormDescriptor> sheetForms =
                 parseFormsInternal(element.children);
+
+
+
+            for(var descriptor in columnsDescriptor.values)  {
+              if( descriptor.primaryKey)  {
+                primaryKey = descriptor.name;
+              }
+
+            }
 
             descriptors.putIfAbsent(
                 sheetName,
                 () => SheetDescriptor(
-                    columnsDescriptor, sheetForms, firstCol,firstRow, lastCol, lastRow, referenceLabels));
+                    columnsDescriptor, sheetForms, firstCol,firstRow, lastCol, lastRow, primaryKey, referenceLabels));
           }
         }
       }

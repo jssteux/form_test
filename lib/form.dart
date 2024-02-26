@@ -40,6 +40,7 @@ class MyCustomFormState extends State<MyCustomForm> {
   Map<String, String> initialValues = {};
   late Map<String, CustomImageState> files;
   late bool autofocusInit;
+  late String primaryKey;
   late LinkedHashMap<String, ColumnDescriptor> columns;
   late List<FormDescriptor> forms;
   Map<String, String> referencesValues = {};
@@ -70,7 +71,7 @@ class MyCustomFormState extends State<MyCustomForm> {
     String columnName = columns.keys.elementAt(formIndex);
     ColumnDescriptor columDescriptor = columns[columnName]!;
 
-    if( columnName == "ID" ) {
+    if( columnName == primaryKey ) {
       return const Text("");
     } else   if (columDescriptor.reference.isNotEmpty) {
       var myController =
@@ -286,7 +287,7 @@ class MyCustomFormState extends State<MyCustomForm> {
       var form = forms[i];
       widgets.add(PopupMenuItem<ListRoute>(
           value: ListRoute(widget.store, widget.sheetName, i,
-              Context(widget.sheetName, initialValues["ID"]), form.label),
+              Context(widget.sheetName, initialValues[primaryKey]), form.label),
           child: Text(form.label)));
     }
 
@@ -302,6 +303,7 @@ class MyCustomFormState extends State<MyCustomForm> {
             .loadRow(widget.sheetName, widget.rowIndex, widget.context),
         builder: (context, AsyncSnapshot<DatasRow> snapshot) {
           if (snapshot.hasData) {
+            primaryKey = snapshot.data!.primaryKey;
             columns = snapshot.data!.columns;
             forms = snapshot.data!.formDescriptors;
 
@@ -380,9 +382,9 @@ class MyCustomFormState extends State<MyCustomForm> {
 
                                     Map<String, String> formValues = {};
 
-                                    if (initialValues["ID"] != null) {
+                                    if (initialValues[primaryKey] != null) {
                                       formValues.putIfAbsent(
-                                          "ID", () => initialValues["ID"]!);
+                                          primaryKey, () => initialValues[primaryKey]!);
                                     }
 
                                     for (int i = 0; i < columns.length; i++) {
@@ -391,7 +393,7 @@ class MyCustomFormState extends State<MyCustomForm> {
                                       ColumnDescriptor columDescriptor =
                                       columns[columnName]!;
 
-                                      if (columnName == "ID") {
+                                      if (columnName == primaryKey) {
                                       } else  if (columDescriptor.reference.isNotEmpty) {
                                         formValues.putIfAbsent(columnName,
                                                 () => referencesValues[columnName]!);

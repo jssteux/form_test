@@ -32,7 +32,7 @@ class MyCustomListState extends State<MyCustomList> {
   final _formKey = GlobalKey<FormState>();
   double initialScrollOffset = 0;
   late List<FilteredLine> _items;
-  late FormDatas sheet;
+  late ListDatas sheet;
   Key _refreshKey = UniqueKey();
   FocusNode focusNode = FocusNode();
   String searchPattern = "";
@@ -62,7 +62,7 @@ class MyCustomListState extends State<MyCustomList> {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('item dismissed')));
 
-        String id = sheet.lines[current].datas["ID"]!;
+        String id = sheet.lines[current].datas[sheet.primaryKey]!;
         sheet.lines.removeAt(current);
         await widget.store.removeData(context, sheet.form.sheetName, id);
 
@@ -190,11 +190,11 @@ class MyCustomListState extends State<MyCustomList> {
 
 
 
-    return FutureBuilder<FormDatas>(
+    return FutureBuilder<ListDatas>(
         key: _refreshKey,
         future: widget.store.loadForm(
             widget.sheetName, widget.formIndex, searchPattern, widget.context),
-        builder: (context, AsyncSnapshot<FormDatas> snapshot) {
+        builder: (context, AsyncSnapshot<ListDatas> snapshot) {
           if( snapshot.hasError)  {
             String errorMsg = snapshot.error.toString();
             debugPrint("List error $errorMsg");

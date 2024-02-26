@@ -13,12 +13,13 @@ class FilteredLine  {
   FilteredLine(this.datas, this.referenceLabels, this.originalIndex);
 }
 
-class FormDatas {
+class ListDatas {
   final  List<FilteredLine> lines;
+  final  String primaryKey;
   final  LinkedHashMap<String,ColumnDescriptor> columns;
   final FormDescriptor form;
 
-  FormDatas(this.lines, this.columns, this.form);
+  ListDatas(this.lines, this.primaryKey, this.columns, this.form);
 }
 
 
@@ -53,9 +54,10 @@ class SheetDescriptor {
   final int firstRow;
   final String lastCol;
   final int lastRow;
+  final String primaryKey;
 
 
-  SheetDescriptor(this.columns, this.formDescriptors, this.firstCol, this.firstRow, this.lastCol, this.lastRow, this.refDisplayName);
+  SheetDescriptor(this.columns, this.formDescriptors, this.firstCol, this.firstRow, this.lastCol, this.lastRow, this.primaryKey, this.refDisplayName);
 }
 
 class SheetDatas {

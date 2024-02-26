@@ -137,6 +137,8 @@ class AsyncStore {
 
     MetaDatas metaDatas = await getMetadatas();
 
+    var sheetDescriptor = metaDatas.sheetDescriptors[sheetName]!;
+
     List<Map<String, String>> res = await getLastSheetData(metaDatas,sheetName, forceReload);
 
     // Add updates
@@ -149,8 +151,8 @@ class AsyncStore {
       if (update.action == "modify") {
         if (update.sheetName == sheetName) {
           for (Map<String, String> initialValues in res) {
-            String? initialKey = initialValues["ID"];
-            String? updateKey = update.datas["ID"];
+            String? initialKey = initialValues[sheetDescriptor.primaryKey];
+            String? updateKey = update.datas[sheetDescriptor.primaryKey];
             if (initialKey != null &&
                 updateKey != null &&
                 initialKey == updateKey) {
@@ -172,7 +174,7 @@ class AsyncStore {
      if (update.action == "removeFromCache") {
        if (update.sheetName == sheetName) {
          res.removeWhere((element) =>
-          element["ID"] == update.datas["ID"]);
+          element[sheetDescriptor.primaryKey] == update.datas[sheetDescriptor.primaryKey]);
        }
       }
     }
@@ -225,9 +227,15 @@ class AsyncStore {
   }
 
   createDatas(String sheetName, Map<String, String> formValues) async {
-    if( formValues["ID"] == null || formValues["ID"] == "") {
+
+    SheetDescriptor desc =  metatDatasCaches!.metaDatas.sheetDescriptors[sheetName]!;
+
+    String primaryKey = desc.primaryKey;
+
+
+    if( formValues[primaryKey] == null || formValues[primaryKey] == "") {
       var ts = DateTime.now().millisecondsSinceEpoch;
-      formValues["ID"] = ts.toString();
+      formValues[primaryKey] = ts.toString();
     }
     await filesStore
         .saveSheetUpdate(FileUpdate("create", sheetName, formValues));
@@ -254,10 +262,12 @@ class AsyncStore {
     }
 
     // Search current item
+    String primaryKey = metaDatas.sheetDescriptors[sheetName]!.primaryKey;
+
     var index = -1;
 
     for (int i = 0; i < datas.length; i++) {
-      if (datas.elementAt(i)["ID"] == id) {
+      if (datas.elementAt(i)[metaDatas.sheetDescriptors[sheetName]!.primaryKey] == id) {
         index = i;
       }
     }
@@ -267,13 +277,14 @@ class AsyncStore {
     if (index != -1) {
       int indexRemove = index + 1;
 
-      var item = ItemToRemove(sheetName, datas.elementAt(index)["ID"]!,
+      var item = ItemToRemove(sheetName, datas.elementAt(index)[primaryKey]!,
           indexRemove, indexRemove + 1);
 
       items.add(item);
 
       // get references
       for (String childSheet in metaDatas.sheetDescriptors.keys) {
+        String childPrimaryKey = metaDatas.sheetDescriptors[childSheet]!.primaryKey;
         if (childSheet != sheetName) {
           var columns = metaDatas.sheetDescriptors[childSheet]!.columns;
           for (ColumnDescriptor desc in columns.values) {
@@ -289,7 +300,7 @@ class AsyncStore {
               for (int i = 0; i < childDatas.length; i++) {
                 String? idRef= childDatas[i][ desc.name];
                 if( idRef != null && idRef == id) {
-                  String? childId = childDatas[i]["ID"];
+                  String? childId = childDatas[i][childPrimaryKey];
                   if (childId != null ) {
 
                     debugPrint("prepareCascadeRemove call child sheet $childSheet");
@@ -309,10 +320,14 @@ class AsyncStore {
   removeData(String sheetName, String id) async {
     //test();
 
+    if( metatDatasCaches!.metaDatas.sheetDescriptors[sheetName] != null)  {
+
+    String primaryKey = metatDatasCaches!.metaDatas.sheetDescriptors[sheetName]!.primaryKey;
+
     debugPrint("----- removeData $sheetName $id");
 
     Map<String, String> formValues = {};
-    formValues["ID"] = id;
+    formValues[primaryKey] = id;
     await filesStore
         .saveSheetUpdate(FileUpdate("remove", sheetName, formValues));
 
@@ -324,14 +339,16 @@ class AsyncStore {
           removedItems, metatDatasCaches!.metaDatas, sheetName,
           id!, true);
 
-      for(var itemToRemove in removedItems) {
+      for (var itemToRemove in removedItems) {
         Map<String, String> formValues = {};
-        formValues["ID"] = itemToRemove.id;
-        debugPrint("add removeFromCache ${itemToRemove.sheetName} ${formValues["ID"]}");
+        formValues[primaryKey] = itemToRemove.id;
+        debugPrint("add removeFromCache ${itemToRemove
+            .sheetName} ${formValues[primaryKey]}");
         await filesStore
-            .saveSheetUpdate(FileUpdate("removeFromCache", itemToRemove.sheetName, formValues));
-     }
-
+            .saveSheetUpdate(
+            FileUpdate("removeFromCache", itemToRemove.sheetName, formValues));
+      }
+    }
 
     }
 
@@ -432,7 +449,7 @@ class AsyncStore {
             }
 
             if( update.action == "remove") {
-              String? id = update.datas["ID"];
+              String? id = update.datas[metatDatasCaches!.metaDatas.sheetDescriptors[update.sheetName]!.primaryKey];
               if (id != null) {
                 List<ItemToRemove> removedItems = [];
                 await prepareCascadeRemove(

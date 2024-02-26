@@ -173,7 +173,10 @@ class BackStore {
       throw(Exception("sheet not defined"));
     }
 
-    var columns = metaDatas.sheetDescriptors[sheetName]!.columns;
+    SheetDescriptor desc =  metaDatas.sheetDescriptors[sheetName]!;
+
+    String primaryKey = metaDatas.sheetDescriptors[sheetName]!.primaryKey;
+    var columns = desc.columns;
 
     final authHeaders = await account.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -201,10 +204,10 @@ class BackStore {
 
     // Search current item
     var index = -1;
-    String? id = formValues["ID"];
+    String? id = formValues[primaryKey];
     if (id != null) {
       for (int i = 0; i < datas.length; i++) {
-        if (datas.elementAt(i)["ID"] == id) {
+        if (datas.elementAt(i)[primaryKey] == id) {
           index = i;
         }
       }
