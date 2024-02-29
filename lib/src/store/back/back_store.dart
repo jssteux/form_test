@@ -231,22 +231,28 @@ class BackStore {
     String lastColumn = String.fromCharCode(metaDatas.sheetDescriptors[sheetName]!.firstCol.codeUnitAt(0) + nbColumns - 1);
 
     if (index == -1) {
-      String range = '$sheetName!$firstCol$firstRow:$lastColumn$firstRow';
+      // Select the first empty row
+      int row = firstRow + datas.length;
+
+
+      String range = '$sheetName!$firstCol$row:$lastColumn$row';
       encodedRange = Uri.encodeComponent(range);
       uri =
-      '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW';
+      '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW&insertDataOption=OVERWRITE';
 
       //final response = await authenticateClient.post(
-      await authenticateClient.post(
+      var response = await authenticateClient.post(
         Uri.parse(uri),
         body: jsonEncode(
           {
-
             "majorDimension": "ROWS",
             'values': [values],
           },
         ),
       );
+
+
+      print(response.body.toString());
     } else {
       int indexInsertion = index + firstRow;
       String range = "$sheetName!$firstCol$indexInsertion:$lastColumn$indexInsertion";
@@ -317,14 +323,23 @@ class BackStore {
 
       int firstRow = metaDatas.sheetDescriptors[item.sheetName]!.firstRow;
 
+      String sFirstCol = metaDatas.sheetDescriptors[item.sheetName]!.firstCol;
+      int startColumnIndex = sFirstCol.codeUnitAt(0) -"A".codeUnitAt(0) ;
+      String sLastCol = metaDatas.sheetDescriptors[item.sheetName]!.lastCol;
+      int lastColumnIndex = sLastCol.codeUnitAt(0) -"A".codeUnitAt(0) ;
+
+
+
       var request = {
-        "deleteDimension": {
+        "deleteRange": {
           "range": {
             "sheetId": sheetIds[item.sheetName],
-            "dimension": "ROWS",
-            "startIndex": item.startIndex + firstRow - 2,
-            "endIndex": item.endIndex + firstRow - 2,
-          }
+            "startRowIndex": item.startIndex + firstRow - 2,
+            "endRowIndex": item.endIndex + firstRow - 2,
+            'startColumnIndex': startColumnIndex,
+            'endColumnIndex': lastColumnIndex,
+          },
+          'shiftDimension': 'ROWS'
         }
       };
 
@@ -337,7 +352,7 @@ class BackStore {
 
       uri =
       '$_sheetsEndpoint$sheetFileId:batchUpdate';
-      await authenticateClient.post(
+      var response = await authenticateClient.post(
         //final response = await authenticateClient.put(
         Uri.parse(uri),
         body: jsonEncode(
@@ -346,7 +361,7 @@ class BackStore {
             }
         ),
       );
-      //print(response.body.toString());
+      print(response.body.toString());
 
       /*
   }
