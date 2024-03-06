@@ -37,7 +37,7 @@ class CustomImageFormField extends FormField<CustomImageState?> {
           } else  {
             if (formFieldState.value!.url != null && formFieldState.value!.url!.isNotEmpty) {
               Future.delayed(const Duration(seconds: 0), () async {
-                formFieldState.didChange(CustomImageState(true, formFieldState.value!.url, await store.loadImage(formFieldState.value!.url)));
+                formFieldState.didChange(CustomImageState(false, formFieldState.value!.url, await store.loadImage(formFieldState.value!.url)));
               });
               child = const Center(
                   child: Column(

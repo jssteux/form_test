@@ -111,6 +111,8 @@ class _FirstRouteState extends State<FirstRoute> {
 
     _googleSignIn.onCurrentUserChanged
         .listen((GoogleSignInAccount? account) async {
+
+          debugPrint("Google signed !");
 /*
       await Future.delayed(Duration(seconds: 5));
       print('delay');
@@ -205,6 +207,8 @@ class _FirstRouteState extends State<FirstRoute> {
       _connectionStatus = result;
     });
 
+    debugPrint('_updateConnectionStatus($result)');
+
     logger.updateConnectionStatus(result);
 
     if( _connectionStatus != ConnectivityResult.none) {
@@ -241,6 +245,8 @@ class _FirstRouteState extends State<FirstRoute> {
 
 
   Future<void> loadSheet() async {
+
+    debugPrint('loadSheet()');
 
     final SharedPreferences prefs = await _prefs;
     String? spreadSheetId = prefs.getString("spreadSheetId");
@@ -332,6 +338,7 @@ class _FirstRouteState extends State<FirstRoute> {
     prefs.clear();
 
     if( store != null) {
+      await store!.clear();
       store!.stop();
     }
 

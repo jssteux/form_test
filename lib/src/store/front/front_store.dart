@@ -44,9 +44,11 @@ class FrontStore {
 
   stop( ) {
     asyncStore.stop();
-
   }
 
+  clear( ) async {
+    await asyncStore.clear();
+  }
 
 
   save(File? file) async {
@@ -102,7 +104,7 @@ class FrontStore {
     else  {
 
      */
-    await asyncStore.createDatas(sheetName, formValues);
+    await asyncStore.createDatas(sheetName, formValues, files);
     //}
 
 
@@ -138,7 +140,7 @@ class FrontStore {
     else  {
 
      */
-      await asyncStore.modifyDatas(sheetName, formValues);
+      await asyncStore.modifyDatas(sheetName, formValues, files);
     //}
 
 

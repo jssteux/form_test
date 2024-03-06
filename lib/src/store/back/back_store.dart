@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
+import 'package:form_test/custom_image_state.dart';
 
 import 'package:form_test/logger.dart';
 import 'package:form_test/src/store/back/back_store_api.dart';
@@ -165,7 +166,8 @@ class BackStore {
   Future<int> saveData(
       MetaDatas metaDatas,
       String sheetName,
-      Map<String, String> formValues) async {
+      Map<String, String> formValues,
+      Map<String, CustomImageState> files) async {
     //test();
 
     if( metaDatas.sheetDescriptors[sheetName] == null) {
@@ -201,6 +203,53 @@ class BackStore {
     List<dynamic> rows = await loadDatas(metaDatas, sheetName);
     List<Map<String, String>> datas = transformSheetRowsToMap(rows, metaDatas, sheetName);
 
+
+
+    List<String> keepValues = [];
+
+    /* Upload files */
+
+    for (int i = 0; i < files.length; i++) {
+      var key = files.keys.elementAt(i);
+      var file = files[key];
+
+      String? id;
+      if (file is CustomImageState) {
+        if (file.modified) {
+          if (file.content != null) {
+            id = await saveImage(file.content);
+          } else {
+            id = "";
+          }
+        } else  {
+          // Keep url
+          String? columnName;
+          columnName = columns.keys.elementAt(int.parse(key));
+          keepValues.add(columnName);
+        }
+      } else {
+        id = await save(file);
+      }
+
+      if (id != null) {
+        String? columnName;
+        columnName = columns.keys.elementAt(int.parse(key));
+        if (columnName.isNotEmpty) {
+          if (id.isNotEmpty) {
+            formValues[columnName] = "https://drive.google.com/file/d/$id/view";
+          } else {
+            formValues[columnName] = "";
+          }
+        }
+      }
+    }
+
+
+
+
+
+
+
     // Search current item
     var index = -1;
     String? id = formValues[primaryKey];
@@ -222,8 +271,19 @@ class BackStore {
       String name = columns.keys.elementAt(i);
       String? value = formValues[name];
       value ??= "";
+
+      if( keepValues.contains(name))  {
+        String? oldValue = datas.elementAt(index)[name];
+        if( oldValue != null) {
+          value = datas.elementAt(index)[name]!;
+        }
+      }
+
       values.add(value);
     }
+
+
+
 
     int firstRow = metaDatas.sheetDescriptors[sheetName]!.firstRow;
     String firstCol =  metaDatas.sheetDescriptors[sheetName]!.firstCol;

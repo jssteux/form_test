@@ -1,6 +1,9 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:path/path.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:form_test/src/store/files/abstract_store.dart';
@@ -87,6 +90,60 @@ class FileStore extends AbstractFilesStore {
     file.writeAsString(jsonEncode(rows));
   }
 
+  @override
+  clear() async {
+    debugPrint("clear files");
+
+    final path = await _localPath;
+
+    final dir = Directory(path);
+
+    dir.listSync().forEach((e)  {
+      String name = basename(e.path);
+      if( name.startsWith("_UPDATES") || name.startsWith("_SHEET_")|| name.startsWith("_FILE_")) {e.deleteSync();}
+    });
+
+
+  }
+
+  @override
+  Future<Uint8List?> loadFile(String url) async {
+    debugPrint("loadFile $url");
+    final path = await _localPath;
+    File file = File('$path/_FILE_$url');
+    if( await file.exists()) {
+      Uint8List content = await file.readAsBytes();
+    return content;
+    } else  {
+    return null;
+    }
+  }
+
+  @override
+  saveFile(String url, Uint8List content) async {
+    debugPrint("saveFile");
+
+    final path = await _localPath;
+    File file = File('$path/_FILE_$url');
+
+    file.writeAsBytes(content);
+  }
+
+  @override
+  removeFiles() async {
+
+    debugPrint("removeFiles");
+
+    final path = await _localPath;
+
+    final dir = Directory(path);
+
+    dir.listSync().forEach((e)  {
+      String name = basename(e.path);
+      if( name.startsWith("_FILE_")) {e.deleteSync();}
+    });
+
+  }
 
 
 }
