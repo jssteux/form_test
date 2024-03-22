@@ -8,5 +8,6 @@ class ColumnDescriptor  {
   final String defaultValue;
   final bool primaryKey;
   final bool cascadeDelete;
-  ColumnDescriptor(this.name,this.type,this.label, this.reference,   this.primaryKey,this.cascadeDelete, this.mandatory, this.defaultValue);
+  final bool synchronized;
+  ColumnDescriptor(this.name,this.type,this.label, this.reference,   this.primaryKey,this.cascadeDelete, this.synchronized, this.mandatory, this.defaultValue);
 }

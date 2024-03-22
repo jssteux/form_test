@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:form_test/custom_image_state.dart';
 import 'package:form_test/src/store/front/front_store.dart';
 
@@ -37,7 +38,18 @@ class CustomImageFormField extends FormField<CustomImageState?> {
           } else  {
             if (formFieldState.value!.url != null && formFieldState.value!.url!.isNotEmpty) {
               Future.delayed(const Duration(seconds: 0), () async {
-                formFieldState.didChange(CustomImageState(false, formFieldState.value!.url, await store.loadImage(formFieldState.value!.url)));
+                Uint8List? img = await store.loadImage(formFieldState.value!.url);
+                if( img != null) {
+                  formFieldState.didChange(CustomImageState(
+                      false, formFieldState.value!.url,
+                      img));
+                } else  {
+                  ByteData datas = await rootBundle.load('images/image-not-found.png');
+
+
+                  formFieldState.didChange(CustomImageState(
+                      false, null,datas.buffer.asUint8List()));
+                }
               });
               child = const Center(
                   child: Column(

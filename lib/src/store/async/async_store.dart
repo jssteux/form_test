@@ -13,6 +13,7 @@ import 'package:form_test/src/store/files/files_store.dart';
 import 'package:form_test/src/store/files/web_files_store.dart';
 import 'package:form_test/src/store/front/form_descriptor.dart';
 import 'package:form_test/src/store/front/sheet.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SheetAsyncCache {
   final DateTime? last;
@@ -35,6 +36,7 @@ class AsyncStore {
   final Map<String, SheetAsyncCache> sheetCaches = {};
   final Map<String, MediaCache> mediaCaches = {};
   MetaDatasCache? metatDatasCaches;
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
   bool continueThread = true;
 
@@ -58,19 +60,32 @@ class AsyncStore {
   }
 
   Future<Uint8List?> getMedia(String url) async {
+
     if (mediaCaches[url] == null) {
 
-      if( url.startsWith("_LOCAL_")) {
-        return await filesStore.loadFile(url);
-      } else {
-        var datas = await backStore!.readMedia(url);
+        Uint8List? datas;
+
+        if (url.startsWith("_LOCAL_")) {
+          datas = await filesStore.loadFile(url);
+        }
+
+        if( datas == null) {
+          String? id = BackStore.getIdFromUrl(url);
+          datas = await filesStore!.loadFile("_SYNC_$id");
+        }
+
+        if( datas == null && backStore != null) {
+          datas = await backStore!.readMedia(url);
+        }
+
         if (datas != null) {
           MediaCache mediaCache = MediaCache(datas);
           mediaCaches[url] = mediaCache;
         }
       }
-    }
 
+
+    // TODO : control size
     if (mediaCaches[url] != null) {
       return mediaCaches[url]!.datas;
     } else {
@@ -79,14 +94,14 @@ class AsyncStore {
   }
 
   /* Reload datas (without applying updates) */
-  Future<List<Map<String, String>>> getLastSheetData(MetaDatas metaDatas, String sheetName, bool forceUpdate) async {
-
+  Future<List<Map<String, String>>> getLastSheetData(
+      MetaDatas metaDatas, String sheetName, bool forceUpdate) async {
     MetaDatas metaDatas = await getMetadatas();
     List<dynamic>? rows;
 
     bool reload = true;
-    if( forceUpdate == false)  {
-      if ((await filesStore.loadSheetFile(sheetName)) != null)  {
+    if (forceUpdate == false) {
+      if ((await filesStore.loadSheetFile(sheetName)) != null) {
         reload = false;
       }
     }
@@ -98,10 +113,8 @@ class AsyncStore {
       rows = (await filesStore.loadSheetFile(sheetName)) as List;
     }
 
-      return transformSheetRowsToMap(rows, metaDatas, sheetName);
+    return transformSheetRowsToMap(rows, metaDatas, sheetName);
   }
-
-
 
   List<Map<String, String>> transformSheetRowsToMap(
       List<dynamic> rows, MetaDatas metaDatas, String sheetName) {
@@ -129,19 +142,15 @@ class AsyncStore {
 
   /* Reload datas (applying updates) */
 
-
-
-
   loadDatas(DateTime? last, String sheetName, bool forceReload) async {
-
-
     debugPrint("loadDatas  $sheetName forceReload $forceReload");
 
     MetaDatas metaDatas = await getMetadatas();
 
     var sheetDescriptor = metaDatas.sheetDescriptors[sheetName]!;
 
-    List<Map<String, String>> res = await getLastSheetData(metaDatas,sheetName, forceReload);
+    List<Map<String, String>> res =
+        await getLastSheetData(metaDatas, sheetName, forceReload);
 
     // Add updates
 
@@ -149,7 +158,6 @@ class AsyncStore {
 
     List<FileUpdate> updates = await filesStore.loadSheetUpdates();
     for (var update in updates) {
-
       if (update.action == "modify") {
         if (update.sheetName == sheetName) {
           for (Map<String, String> initialValues in res) {
@@ -173,17 +181,18 @@ class AsyncStore {
         }
       }
 
-     if (update.action == "removeFromCache") {
-       if (update.sheetName == sheetName) {
-         res.removeWhere((element) =>
-          element[sheetDescriptor.primaryKey] == update.datas[sheetDescriptor.primaryKey]);
-       }
+      if (update.action == "removeFromCache") {
+        if (update.sheetName == sheetName) {
+          res.removeWhere((element) =>
+              element[sheetDescriptor.primaryKey] ==
+              update.datas[sheetDescriptor.primaryKey]);
+        }
       }
     }
 
     debugPrint("loadDatas  $sheetName after Update");
 
- //   if(  sheetName == "CLIENT")  {
+    //   if(  sheetName == "CLIENT")  {
 /*
     if( sheetName == "PURCHASE" )  {
       debugPrint("**********loadData internal return $sheetName ***************");
@@ -197,8 +206,8 @@ class AsyncStore {
 
     }
 */
-   sheetCaches[sheetName] = SheetAsyncCache(last, res);
-   return res;
+    sheetCaches[sheetName] = SheetAsyncCache(last, res);
+    return res;
   }
 
   loadMetadatas(DateTime? last) async {
@@ -220,10 +229,10 @@ class AsyncStore {
     metatDatasCaches = MetaDatasCache(metaDatas, last);
   }
 
-
-  updateNewFile(String sheetName, Map<String, String> formValues, Map<String, CustomImageState> files,  List<String> uploadFileUrls) async {
-    SheetDescriptor desc =  metatDatasCaches!.metaDatas.sheetDescriptors[sheetName]!;
-
+  updateNewFile(String sheetName, Map<String, String> formValues,
+      Map<String, CustomImageState> files, List<String> uploadFileUrls) async {
+    SheetDescriptor desc =
+        metatDatasCaches!.metaDatas.sheetDescriptors[sheetName]!;
 
     // Update new ID
 
@@ -233,10 +242,8 @@ class AsyncStore {
 
       String? id;
       if (file is CustomImageState) {
-
         String? columnName;
         columnName = desc.columns.keys.elementAt(int.parse(key));
-
 
         if (file.modified) {
           if (file.content != null) {
@@ -244,7 +251,7 @@ class AsyncStore {
             id = "_LOCAL_${sheetName}_$ts";
             await filesStore.saveFile(id, file.content!);
             uploadFileUrls.add(id);
-          } else  {
+          } else {
             id = "";
             uploadFileUrls.add("_REMOVE_$columnName");
           }
@@ -261,35 +268,34 @@ class AsyncStore {
     }
   }
 
-
-  modifyDatas(String sheetName, Map<String, String> formValues, Map<String, CustomImageState> files) async {
-
+  modifyDatas(String sheetName, Map<String, String> formValues,
+      Map<String, CustomImageState> files) async {
     List<String> uploadFileUrls = [];
     await updateNewFile(sheetName, formValues, files, uploadFileUrls);
 
-    await filesStore
-        .saveSheetUpdate(FileUpdate("modify", sheetName, formValues, uploadFileUrls));
+    await filesStore.saveSheetUpdate(
+        FileUpdate("modify", sheetName, formValues, uploadFileUrls));
 
     // Update caches
     await loadDatas(null, sheetName, false);
   }
 
-  createDatas(String sheetName, Map<String, String> formValues, Map<String, CustomImageState> files) async {
-
+  createDatas(String sheetName, Map<String, String> formValues,
+      Map<String, CustomImageState> files) async {
     List<String> uploadFileUrls = [];
     await updateNewFile(sheetName, formValues, files, uploadFileUrls);
 
-    SheetDescriptor desc =  metatDatasCaches!.metaDatas.sheetDescriptors[sheetName]!;
+    SheetDescriptor desc =
+        metatDatasCaches!.metaDatas.sheetDescriptors[sheetName]!;
 
     String primaryKey = desc.primaryKey;
 
-
-    if( formValues[primaryKey] == null || formValues[primaryKey] == "") {
+    if (formValues[primaryKey] == null || formValues[primaryKey] == "") {
       var ts = DateTime.now().millisecondsSinceEpoch;
       formValues[primaryKey] = ts.toString();
     }
-    await filesStore
-        .saveSheetUpdate(FileUpdate("create", sheetName, formValues, uploadFileUrls));
+    await filesStore.saveSheetUpdate(
+        FileUpdate("create", sheetName, formValues, uploadFileUrls));
 
     // Update caches
     await loadDatas(null, sheetName, false);
@@ -297,15 +303,12 @@ class AsyncStore {
 
   prepareCascadeRemove(List<ItemToRemove> items, MetaDatas metaDatas,
       String sheetName, String id, bool cache) async {
-
-
     debugPrint("prepareCascadeRemove $sheetName $id");
-
 
     List<Map<String, String>> datas;
     // Refresh datas
 
-    if( cache) {
+    if (cache) {
       datas = await loadDatas(null, sheetName, false);
     } else {
       List<dynamic> rows = await backStore!.loadDatas(metaDatas, sheetName);
@@ -318,7 +321,9 @@ class AsyncStore {
     var index = -1;
 
     for (int i = 0; i < datas.length; i++) {
-      if (datas.elementAt(i)[metaDatas.sheetDescriptors[sheetName]!.primaryKey] == id) {
+      if (datas.elementAt(
+              i)[metaDatas.sheetDescriptors[sheetName]!.primaryKey] ==
+          id) {
         index = i;
       }
     }
@@ -335,26 +340,29 @@ class AsyncStore {
 
       // get references
       for (String childSheet in metaDatas.sheetDescriptors.keys) {
-        String childPrimaryKey = metaDatas.sheetDescriptors[childSheet]!.primaryKey;
+        String childPrimaryKey =
+            metaDatas.sheetDescriptors[childSheet]!.primaryKey;
         if (childSheet != sheetName) {
           var columns = metaDatas.sheetDescriptors[childSheet]!.columns;
           for (ColumnDescriptor desc in columns.values) {
             if (desc.reference == sheetName && desc.cascadeDelete) {
               List<Map<String, String>> childDatas;
-              if( cache) {
+              if (cache) {
                 childDatas = await loadDatas(null, childSheet, false);
               } else {
-                List<dynamic> rows = await backStore!.loadDatas(metaDatas, childSheet);
-                childDatas = transformSheetRowsToMap(rows, metaDatas, childSheet);
+                List<dynamic> rows =
+                    await backStore!.loadDatas(metaDatas, childSheet);
+                childDatas =
+                    transformSheetRowsToMap(rows, metaDatas, childSheet);
               }
 
               for (int i = 0; i < childDatas.length; i++) {
-                String? idRef= childDatas[i][ desc.name];
-                if( idRef != null && idRef == id) {
+                String? idRef = childDatas[i][desc.name];
+                if (idRef != null && idRef == id) {
                   String? childId = childDatas[i][childPrimaryKey];
-                  if (childId != null ) {
-
-                    debugPrint("prepareCascadeRemove call child sheet $childSheet");
+                  if (childId != null) {
+                    debugPrint(
+                        "prepareCascadeRemove call child sheet $childSheet");
 
                     await prepareCascadeRemove(
                         items, metaDatas, childSheet, childId, cache);
@@ -371,42 +379,34 @@ class AsyncStore {
   removeData(String sheetName, String id) async {
     //test();
 
-    if( metatDatasCaches!.metaDatas.sheetDescriptors[sheetName] != null)  {
+    if (metatDatasCaches!.metaDatas.sheetDescriptors[sheetName] != null) {
+      String primaryKey =
+          metatDatasCaches!.metaDatas.sheetDescriptors[sheetName]!.primaryKey;
 
-    String primaryKey = metatDatasCaches!.metaDatas.sheetDescriptors[sheetName]!.primaryKey;
+      debugPrint("----- removeData $sheetName $id");
 
-    debugPrint("----- removeData $sheetName $id");
-
-    Map<String, String> formValues = {};
-    formValues[primaryKey] = id;
-    await filesStore
-        .saveSheetUpdate(FileUpdate("remove", sheetName, formValues, []));
-
-
+      Map<String, String> formValues = {};
+      formValues[primaryKey] = id;
+      await filesStore
+          .saveSheetUpdate(FileUpdate("remove", sheetName, formValues, []));
 
       List<ItemToRemove> removedItems = [];
 
       await prepareCascadeRemove(
-          removedItems, metatDatasCaches!.metaDatas, sheetName,
-          id, true);
+          removedItems, metatDatasCaches!.metaDatas, sheetName, id, true);
 
       for (var itemToRemove in removedItems) {
         Map<String, String> formValues = {};
         formValues[primaryKey] = itemToRemove.id;
-        debugPrint("add removeFromCache ${itemToRemove
-            .sheetName} ${formValues[primaryKey]}");
-        await filesStore
-            .saveSheetUpdate(
-            FileUpdate("removeFromCache", itemToRemove.sheetName, formValues,[]));
+        debugPrint(
+            "add removeFromCache ${itemToRemove.sheetName} ${formValues[primaryKey]}");
+        await filesStore.saveSheetUpdate(FileUpdate(
+            "removeFromCache", itemToRemove.sheetName, formValues, []));
       }
-
-
     }
 
-
-
     MetaDatas metaDatas = await getMetadatas();
-    for(String sheetName in metaDatas.sheetDescriptors.keys) {
+    for (String sheetName in metaDatas.sheetDescriptors.keys) {
       // Update caches
       await loadDatas(null, sheetName, false);
     }
@@ -424,11 +424,7 @@ class AsyncStore {
     Future.delayed(Duration.zero, refreshTread);
   }
 
-
-
-
   refreshTread() async {
-
     while (continueThread == true) {
       try {
         DateTime? last;
@@ -483,61 +479,62 @@ class AsyncStore {
         // UPDATES
 
         if (backStore != null) {
-
           debugPrint("apply updates");
 
-          for( FileUpdate update in await filesStore.loadSheetUpdates()) {
-            Set<String> sheetsToReload={};
+          for (FileUpdate update in await filesStore.loadSheetUpdates()) {
+            Set<String> sheetsToReload = {};
 
-            if( update.action == "modify") {
+            if (update.action == "modify") {
+              Map<String, CustomImageState> files =
+                  await prepareUploadFiles(update);
 
-              Map<String, CustomImageState> files = await prepareUploadFiles(update);
-
-              await backStore!.saveData(
-                  metatDatasCaches!.metaDatas, update.sheetName, update.datas, files);
+              await backStore!.saveData(metatDatasCaches!.metaDatas,
+                  update.sheetName, update.datas, files);
 
               sheetsToReload.add(update.sheetName);
             }
 
-            if( update.action == "create") {
-              Map<String, CustomImageState> files = await prepareUploadFiles(update);
+            if (update.action == "create") {
+              Map<String, CustomImageState> files =
+                  await prepareUploadFiles(update);
 
-
-             await backStore!.saveData(
-                 metatDatasCaches!.metaDatas, update.sheetName, update.datas, files);
-             sheetsToReload.add(update.sheetName);
+              await backStore!.saveData(metatDatasCaches!.metaDatas,
+                  update.sheetName, update.datas, files);
+              sheetsToReload.add(update.sheetName);
             }
 
-            if( update.action == "remove") {
-              String? id = update.datas[metatDatasCaches!.metaDatas.sheetDescriptors[update.sheetName]!.primaryKey];
+            if (update.action == "remove") {
+              String? id = update.datas[metatDatasCaches!
+                  .metaDatas.sheetDescriptors[update.sheetName]!.primaryKey];
               if (id != null) {
                 List<ItemToRemove> removedItems = [];
-                await prepareCascadeRemove(
-                    removedItems, metatDatasCaches!.metaDatas, update.sheetName,
-                    id, false);
-                await backStore!.removeData(metatDatasCaches!.metaDatas,removedItems);
-                for(var itemToRemove in removedItems) {
+                await prepareCascadeRemove(removedItems,
+                    metatDatasCaches!.metaDatas, update.sheetName, id, false);
+                await backStore!
+                    .removeData(metatDatasCaches!.metaDatas, removedItems);
+                for (var itemToRemove in removedItems) {
                   sheetsToReload.add(itemToRemove.sheetName);
                 }
               }
-           }
+            }
 
             await filesStore.removeSheetUpdate();
 
             // Reload caches
-             for(String reloadSheet in sheetsToReload) {
-               await loadDatas(last, reloadSheet, true);
-             }
+            for (String reloadSheet in sheetsToReload) {
+              await loadDatas(last, reloadSheet, true);
+            }
           }
 
           // Remove local files
 
-
-
+          // Get File updates
+          await updateSynchronizedFiles(metatDatasCaches!.metaDatas);
         }
       } catch (e, stacktrace) {
         // if( connection) {
-        debugPrintStack(label: "AsyncStore ERROR  ${e.toString()}", stackTrace: stacktrace);
+        debugPrintStack(
+            label: "AsyncStore ERROR  ${e.toString()}", stackTrace: stacktrace);
 
         // }
       }
@@ -546,22 +543,71 @@ class AsyncStore {
     }
   }
 
-  Future<Map<String, CustomImageState>> prepareUploadFiles(FileUpdate update) async {
-                Map<String, CustomImageState> files = {};
+  Future<void> updateSynchronizedFiles(MetaDatas metaDatas) async {
+    // Get File updates
+    List<Map<String, String>> datas;
+
+    List<String> urlToChecks = [];
 
 
+    for (String sheetName in metaDatas.sheetDescriptors.keys) {
+      var cols = metaDatas.sheetDescriptors[sheetName]!.columns;
+
+      for (ColumnDescriptor col in cols.values) {
+        if (col.synchronized) {
+          datas = await loadDatas(null, sheetName, false);
+          for (var colDatas in datas) {
+            String? value = colDatas[col.name];
+            if (value != null && value.isNotEmpty) {
+              urlToChecks.add(value);
+            }
+          }
+        }
+      }
+    }
+
+    final SharedPreferences prefs = await _prefs;
+    String? filesSyncDate = prefs.getString("filesSyncDate");
+    DateTime? lastModifiedDate;
+    if( filesSyncDate != null)  {
+      lastModifiedDate = DateTime.parse( filesSyncDate);
+    }
+
+    FileSyncInfos syncInfos = await backStore!.getModifiedFiles(lastModifiedDate, urlToChecks);
+
+    for(String url in syncInfos.modifiedUrls) {
+      var datas = await backStore!.readMedia(url);
+      if (datas != null) {
+        String? id = BackStore.getIdFromUrl(url!);
+        if( id != null) {
+          filesStore.saveFile("_SYNC_$id", datas);
+        }
+        mediaCaches.remove(url);
+      }
+    }
+
+    if( syncInfos.lastModifiedDate != null)  {
+       debugPrint("syncInfos.lastModifiedDate ${syncInfos.lastModifiedDate}");
+       prefs.setString("filesSyncDate", syncInfos.lastModifiedDate!.toString());
+    }
+
+
+  }
+
+  Future<Map<String, CustomImageState>> prepareUploadFiles(
+      FileUpdate update) async {
+    Map<String, CustomImageState> files = {};
 
     int colIndice = 0;
 
-    for( var column in metatDatasCaches!.metaDatas.sheetDescriptors[update.sheetName]!.columns.values)  {
-
-      if( column.type == "GOOGLE_IMAGE") {
-
+    for (var column in metatDatasCaches!
+        .metaDatas.sheetDescriptors[update.sheetName]!.columns.values) {
+      if (column.type == "GOOGLE_IMAGE") {
         String? url = update.datas[column.name];
         CustomImageState file;
 
         String removeUrl = "_REMOVE_${column.name}";
-        if(update.uploadFileUrls.contains(removeUrl)) {
+        if (update.uploadFileUrls.contains(removeUrl)) {
           // Remove
           file = CustomImageState(true, null, null);
         } else {
@@ -583,20 +629,14 @@ class AsyncStore {
       }
 
       colIndice++;
-
     }
     return files;
   }
-
-
-
 
   clear() async {
     debugPrint("clear");
     await filesStore.clear();
   }
-
-
 
   stop() {
     debugPrint("stop");

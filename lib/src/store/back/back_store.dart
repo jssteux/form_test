@@ -23,13 +23,71 @@ class BackStore {
   final Logger logger;
   DateTime? lastCheck;
   FileItem? spreadSheet ;
+  static RegExp exp = RegExp('https://drive.google.com/file/d/([a-zA-Z0-9_-]*)/view');
+
 
 
 
   BackStore(this.account, this.logger);
 
+  static String? getIdFromUrl(String url) {
+
+    String? id;
+
+    Iterable<RegExpMatch> matches = exp.allMatches(url);
+    for (final m in matches) {
+      id = m[1]!;
+    }
+
+    return id;
+  }
+
+  Future<FileSyncInfos> getModifiedFiles(DateTime? currentLastModified, List<String> urls) async {
+
+    final authHeaders = await account.authHeaders;
+    final authenticateClient = GoogleAuthClient(authHeaders);
+    final driveApi = drive.DriveApi(authenticateClient);
+
+    List<String> inputIds = [];
+    List<String> outputUrls = [];
 
 
+    DateTime? newLastModified;
+
+
+
+    for(String url in urls) {
+      String? id = getIdFromUrl( url);
+      if( id != null) {
+        inputIds.add(id);
+      }
+    }
+
+
+    for(String id in inputIds) {
+
+      var file  = await driveApi.files.get(id,
+          supportsAllDrives: true,   $fields: 'id, modifiedTime') as drive.File;
+
+      DateTime? fileDate = file.modifiedTime;
+
+      if( file.id != null) {
+        if (currentLastModified == null ||
+            (fileDate != null && fileDate!.isAfter(currentLastModified))) {
+          outputUrls.add('https://drive.google.com/file/d/${file.id!}/view');
+        }
+
+        // update last modified
+        if (newLastModified == null ||
+            (fileDate != null && fileDate!.isAfter(newLastModified))) {
+          newLastModified = fileDate;
+        }
+      }
+    }
+
+
+    return FileSyncInfos(newLastModified, outputUrls);
+  }
 
 
 
@@ -99,12 +157,11 @@ class BackStore {
     final authenticateClient = GoogleAuthClient(authHeaders);
     final driveApi = drive.DriveApi(authenticateClient);
 
-    RegExp exp =
-        RegExp('https://drive.google.com/file/d/([a-zA-Z0-9_-]*)/view');
 
-    Iterable<RegExpMatch> matches = exp.allMatches(url);
-    for (final m in matches) {
-      String fileId = m[1]!;
+    String? fileId = getIdFromUrl(url);
+    if( fileId != null)
+     {
+
       drive.Media readFile = await driveApi.files.get(fileId,
           supportsAllDrives: true,
           downloadOptions: drive.DownloadOptions.fullMedia) as drive.Media;
@@ -301,7 +358,7 @@ class BackStore {
       '$_sheetsEndpoint$sheetFileId/values/$encodedRange:append?valueInputOption=RAW&insertDataOption=OVERWRITE';
 
       //final response = await authenticateClient.post(
-      var response = await authenticateClient.post(
+       await authenticateClient.post(
         Uri.parse(uri),
         body: jsonEncode(
           {
@@ -312,7 +369,7 @@ class BackStore {
       );
 
 
-      print(response.body.toString());
+      //print(response.body.toString());
     } else {
       int indexInsertion = index + firstRow;
       String range = "$sheetName!$firstCol$indexInsertion:$lastColumn$indexInsertion";
@@ -397,7 +454,7 @@ class BackStore {
             "startRowIndex": item.startIndex + firstRow - 2,
             "endRowIndex": item.endIndex + firstRow - 2,
             'startColumnIndex': startColumnIndex,
-            'endColumnIndex': lastColumnIndex,
+            'endColumnIndex': lastColumnIndex + 1,
           },
           'shiftDimension': 'ROWS'
         }
@@ -412,7 +469,9 @@ class BackStore {
 
       uri =
       '$_sheetsEndpoint$sheetFileId:batchUpdate';
-      var response = await authenticateClient.post(
+
+    await authenticateClient.post(
+    //  var response = await authenticateClient.post(
         //final response = await authenticateClient.put(
         Uri.parse(uri),
         body: jsonEncode(
@@ -421,7 +480,7 @@ class BackStore {
             }
         ),
       );
-      print(response.body.toString());
+      //print(response.body.toString());
 
       /*
   }

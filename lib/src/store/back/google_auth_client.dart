@@ -13,22 +13,29 @@ class GoogleAuthClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
 
-      var ts = DateTime.now().millisecondsSinceEpoch;
-      requests.add( ts);
+    // Quota only for spreadsheet
+
+    if( !request.url.path.startsWith("/drive")) {
+      var ts = DateTime
+          .now()
+          .millisecondsSinceEpoch;
+      requests.add(ts);
+
+      debugPrint("send ${request.url.path}");
 
       debugPrint("send quota ${requests.length}");
 
       while (requests.length > 50) {
-
         await Future.delayed(const Duration(seconds: 1));
 
         debugPrint("wait quota ${requests.length}");
 
-        var now = DateTime.now().millisecondsSinceEpoch;
+        var now = DateTime
+            .now()
+            .millisecondsSinceEpoch;
         requests.removeWhere((element) => (now - element) > 60000);
-
       }
-
+    }
 
 
     return _client.send(request..headers.addAll(_headers));

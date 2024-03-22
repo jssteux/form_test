@@ -129,6 +129,7 @@ class Parser {
                 String defaultValue = "";
                 bool primaryKey = false;
                 bool cascadeDelete = false;
+                bool synchronized = false;
 
                 for (var propertySheet in subStep.children) {
                   if (propertySheet is ParserProperty) {
@@ -159,6 +160,12 @@ class Parser {
                         mandatory = true;
                       }
                     }
+                    if (propertySheet.name == "SYNCHRONIZED") {
+                      if ("TRUE" == propertySheet.value) {
+                        synchronized = true;
+                      }
+                    }
+
                     if (propertySheet.name == "DEFAULT") {
                       defaultValue = propertySheet.value;
                     }
@@ -169,7 +176,7 @@ class Parser {
                   columnsDescriptor.putIfAbsent(
                       name,
                       () => ColumnDescriptor(name!, type, label, reference,
-                          primaryKey, cascadeDelete, mandatory, defaultValue));
+                          primaryKey, cascadeDelete, synchronized, mandatory, defaultValue));
                   //print('add column$name $type');
                 }
               }
